@@ -1,0 +1,101 @@
+#!/usr/bin/env newlisp
+
+(if (= (env "BBHOME") "")
+    (begin
+      (println "BBHOME is not set")
+					;(exit 1)
+    )
+)
+
+(if (= (env "BBRDS") "")
+    (begin
+      (println "BBRDS is not set")
+					;(exit 1)
+    )
+)
+
+(if (not (directory? (env "BBHOME")))
+    (begin
+      (println "BBHOME is invalid")
+      (exit 1)
+      )
+)
+
+(setq RRDTOOL "/usr/bin/rrdtool")
+(setq RRAS "RRA:AVERAGE:0.5:1:576 RRA:AVERAGE:0.5:6:576 RRA:AVERAGE:0.5:24:576 RRA:AVERAGE:0.5:288:576 ")
+##
+# real work begins here
+##
+
+# go to the logs area for simplication of the list
+
+(setq logs (directory (env "BBLOGS") {\.mysql}  ) )
+
+
+;(setq logs (directory (env "BBTMP") {\.mysql}  ) )
+
+(define (get-value rrd-value rrd-value-index log-item)
+  (setq buffer (read-file (format "%s/%s" (env "BBLOGS") log-item)))
+  (setq (line-item (first (parse buffer "\n"))))
+  (if (!= line-item "")
+      (begin
+	(setq line-item (parse line-item))
+	(nth rrd-value-index line-item)))
+)
+
+# go to the logs area and see what data we can gather 
+
+(define (generate-rrd rrd-name rrd-value rrd-value-index log-item )
+
+  (set 'RRD (format "%s/%s/%s.rrd"
+		    (env "BBRRDS")
+		    HOST 
+		    rrd-name ))
+
+  (if (not (file? RRD))
+      (begin 
+	(set 'STATUS (! (format "%s create %s DS:%s:GAUGE:600:0:U %s"
+				RRDTOOL
+				RRD
+				rrd-name
+				RRAS)))
+	(if (= STATUS 1)
+	    (println "STATUS did not find RRD file. Created")
+	    )
+	))
+
+  (setq TS "N")
+
+  (setq buffer (read-file (format "%s/%s" (env "BBLOGS") log-item )))
+
+ 
+  (if (!= buffer '())
+      (begin
+	(setq VALUE
+	      (first buffer)))
+      (setq VALUE 0)
+      )
+
+
+  (! (format "%s update %s %s:%s"
+	     RRDTOOL
+	     RRD
+	     TS
+	     VALUE))
+  
+)
+
+
+(dolist (log-item logs)
+	(set 'HOST (first (parse log-item ".")))
+
+;	(set 'HOST "air")
+
+	(cond ((find "mysqlslow" log-item)
+	       (generate-rrd "mysqlslow" "Slow" 8 log-item))
+	      ((find "mysqlthread" log-item)
+	       (generate-rrd "mysqlthread" "Threads" 3 log-item ))
+	      )
+)
+
+(exit 0)

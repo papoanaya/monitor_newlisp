@@ -1,0 +1,191 @@
+#!/usr/bin/env newlisp
+
+#
+# BBPROG SHOULD JUST CONTAIN THE NAME OF THIS FILE
+# USEFUL WHEN YOU GET ENVIRONMENT DUMPS TO LOCATE
+# THE OFFENDING SCRIPT...
+#
+
+(setq BBPROG="bb-mysqlstat.nlsp")
+
+#
+# TEST NAME: THIS WILL BECOME A COLUMN ON THE DISPLAY
+# IT SHOULD BE AS SHORT AS POSSIBLE TO SAVE SPACE...
+# NOTE YOU CAN ALSO CREATE A HELP FILE FOR YOUR TEST
+# WHICH SHOULD BE PUT IN www/help/$TEST.html.  IT WILL
+# BE LINKED INTO THE DISPLAY AUTOMATICALLY.
+#
+
+(setq TEST "mysql")
+
+(setq HOSTTAG TEST)
+(setq COLUMN HOSTTAG)
+
+#
+# BBHOME CAN BE SET MANUALLY WHEN TESTING.
+# OTHERWISE IT SHOULD BE SET FROM THE BB ENVIRONMENT
+#
+
+(if (= (env "BBHOME") "")
+    (println "BBHOME is not set... exiting")
+;    (exit 1)
+)
+
+
+
+(if (= (env "BBTMP") "")
+    (println "BBTMP is not set... exiting")
+;    (exit 1)
+)
+
+
+#
+# NOW COLLECT SOME DATA
+# IN THIS CASE, IT'S THE CURRENT MEMORY USAGE OF THE SYSTEM
+
+# SELECT SOME LEVELS... GREEN IS THE DEFAULT...
+
+;declare -i MYSQL_UPTIME
+;declare -i MYSQL_THREADS
+;declare -i MYSQL_SLOWQ
+;declare -i MYSQL_QPS
+;declare -i MYSQL_OLDUPTIME
+;declare -i MYSQL_OLDSLOWQ
+;declare -i MYSQL_DSLOWQ
+
+#
+# GET CURRENT VALUES
+#
+(setq MYSQLADMIN (exec "/usr/bin/mysqladmin --user=root --password=sekret status"))
+(setq MYSQLLINE nil)
+
+(if (!= MYSQLADMIN '())
+    (begin
+      (setq MYSQLLINE (first MYSQLADMIN))
+      (setq MYSQLADMIN (parse MYSQLLINE)))
+)
+
+;(println MYSQLADMIN)
+;(println MYSQLLINE)
+
+(setq MYSQL_UPTIME (nth 1 MYSQLADMIN ))
+(setq MYSQL_THREADS (nth 3 MYSQLADMIN))
+(setq MYSQL_SLOWQ (nth 8 MYSQLADMIN))
+(setq MYSQL_QPSFRAC (nth 21 MYSQLADMIN))
+
+;(println MYSQL_SLOWQ)
+
+;MYSQL_QPS=${MYSQL_QPSFRAC%%.*}
+
+#
+# GET OLD VALUES
+#
+
+(setq MYSQL_OLDUPTIME 0)
+(setq MYSQL_OLDSLOWQ 0)
+
+(catch 
+ (setq MYSQL_OLDUPTIME (first (exec (format "%s %s/%s.%s.mysqluptime.log"
+					      (env "CAT")
+					      (env "BBTMP")
+					      (env "MACHINE")
+					      TEST)))) 'result)
+(catch
+ (setq MYSQL_OLDSLOWQ  (first (exec (format "%s %s/%s.%s.mysqlslowq.log"
+					      (env "CAT")
+					      (env "BBTMP")
+					      (env "MACHINE")
+					      TEST)))) 'result)
+
+
+#
+# WRITE OUR OWN VALUES TO LOG
+#
+
+;(println MYSQL_UPTIME)
+
+(!
+ (format "echo \"%s\" > %s/%s.%s.mysqluptime.log"
+	 MYSQL_UPTIME 
+	 (env "BBTMP")
+	 (env "MACHINE")
+	 TEST) )
+
+(!
+ (format "echo \"%s\" > %s/%s.%s.mysqlslowq.log"
+	 MYSQL_SLOWQ
+	 (env "BBTMP")
+	 (env "MACHINE")
+	 TEST) )
+
+
+
+#
+# COMPUTE DIFFERENCES
+#
+
+(setq MYSQL_DSLOWQ (-  (int MYSQL_SLOWQ) (int MYSQL_OLDSLOWQ)))
+
+
+(setq COLOR "green")
+(setq STATUS "Mysql OK")
+
+
+#
+# HANDLE YELLOW CONDITIONS
+#
+
+
+(cond 
+
+ ((<= MYSQL_UPTIME MYSQL_OLDUPTIME)
+  (begin
+    (setq COLOR "yellow")
+    (setq STATUS "Mysql Recently Restarted")))
+  ((>= (int MYSQL_THREADS) 80)
+   (begin
+     (setq COLOR "yellow")
+     (setq STATUS "Mysql high threads")))
+  ((>= (int MYSQL_DSLOWQ)  10)
+   (begin
+     (setq COLOR "yellow")
+     (setq STATUS "Mysql slow queries")))
+
+#
+# HANDLE RED CONDITIONS
+#
+
+
+
+  ((>= (int MYSQL_THREADS) 150)
+   (begin
+     (setq COLOR "red")
+     (setq STATUS "Mysql very high threads")))
+  ((>= (int MYSQL_DSLOWQ)  30)
+   (begin
+     (setq COLOR "red")
+     (setq STATUS "Mysql extreme number of slow queries")))
+)
+
+(println (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
+	   (env "BB")
+	   (env "BBDISP")
+	   (env "MACHINE")
+	   TEST   
+	   COLOR
+	   (date)
+	   STATUS
+	   MYSQLLINE))
+
+
+(! (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
+	   (env "BB")
+	   (env "BBDISP")
+	   (env "MACHINE")
+	   TEST   
+	   COLOR
+	   (date)
+	   STATUS
+	   MYSQLLINE))
+
+(exit)

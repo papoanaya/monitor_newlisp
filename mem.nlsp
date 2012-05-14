@@ -1,0 +1,59 @@
+#!/opt/home/papo/bin/newlisp
+
+;; = Config =
+(define DATE-FORMAT "'%A, %d.%m.%Y %H:%M:%S'")
+
+;; Appareance
+(define FONT "'-*-profont-*-*-*-*-11-*-*-*-*-*-iso8859'")
+(define BACKGROUND-COLOR "'#2c2c32'")
+(define ALTERNATE-BACKGROUND-COLOR "'#494b4f'")
+(define FOREGROUND-COLOR "'grey70'")
+(define SEPARATOR "^p(3)^r(3x3)^p(3)")
+
+
+(define (get-free) 
+  (setq free-results (exec "free"))
+  (parse (last free-results))
+ )
+
+
+
+(define (get-dbar label per)
+   (first (exec  (append "echo " per "| gdbar -l " label) ))
+)
+
+
+
+(define (get-dbar-results)
+  (setq free-result (get-free))
+  (get-dbar "mem" 
+  (string (round (mul 
+		 (div 
+		  (float (nth 3 free-result)) 
+		  (float (nth 2 free-result))) 100 ) 0) ) )
+)
+
+
+
+
+(define (main)
+
+  (map set '(myin bcout) (pipe))
+  (map set '(bcin myout) (pipe))
+;;  (setq pid 
+;;       (process "/opt/home/papo/bin/dzen2 -y 500 -l 4 -w 400 -p -ta l -sa l -e 'onstart=uncollapse'") bcin 0 )
+
+  (setq pid (process "/opt/home/papo/bin/dzen2 -p -bg gray10 -fn fixed -x 200 -w 600  -ta r  " bcin 0))
+
+  (while (not nil)
+	 (map (fn (x)
+		    (if (not (nil? (find "sd" x)))
+			(write myout (format "%s " x))) )
+	   (get-dbar-results))
+	 (write-line myout)
+	 (sleep 10000)
+	 )
+  (destroy pid)
+)
+
+;(main)

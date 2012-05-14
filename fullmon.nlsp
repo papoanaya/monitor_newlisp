@@ -1,0 +1,253 @@
+#!/opt/bin/env newlisp
+
+;****m* dzen_newlisp/fullmon.nlsp
+;
+; NAME 
+;   fullmon.nlsp
+; 
+; SYNOPSIS 
+;    A monitoring script for dzen2.
+;    Self contained script that performs some light monitoring
+;    functions in a Linux System and sends those monitoring
+;    statistics to a dzen2 process.
+;
+; AUTHOR 
+;    Luis R. Anaya
+; 
+; COPYRIGHT 
+;    (c) 2012 by Luis R. Anaya
+; 
+;******
+
+;****** dzen_newlisp/configuration
+; 
+; DESCRIPTION
+;    User configurable parameters
+; 
+; SOURCE
+;; = Config =
+
+(define DATE-FORMAT "'%A, %d.%m.%Y %H:%M:%S'")
+
+
+;; Appareance
+;;(define FONT "'-*-profont-*-*-*-*-11-*-*-*-*-*-iso8859'")
+(define BACKGROUND-COLOR "'#2c2c32'")
+(define ALTERNATE-BACKGROUND-COLOR "'#494b4f'")
+(define FOREGROUND-COLOR "'grey70'")
+(define SEPARATOR "^p(3)^r(3x3)^p(3)")
+(define FONT "fixed")
+
+
+;; Cpu settings
+(define CPU-CORES (list 0))
+
+;; Main loop interval in seconds
+(define SLEEP-INTERVAL 1)
+
+;******
+;****** dzen_newlisp/signal
+; 
+; DESCRIPTION
+;    Signal handling constants
+; 
+; SOURCE
+;
+
+
+(constant 'SIGINT 2)
+(constant 'SIGKILL 9)
+(constant 'SIGQUIT 3)
+(constant 'SIGABRT 6)
+(constant 'SIGSTOP 19)
+(constant 'SIGTERM 15)
+
+;******
+
+
+;****f*
+; 
+; NAME 
+;    ctrlC-handler
+;
+; DESCRIPTION
+;    Signal handler routine for al signals
+;    It just terminates execution and closes the program. 
+;   
+;******
+
+(define (ctrlC-handler)
+  (exit)
+)
+
+
+
+(signal SIGINT 'ctrlC-handler)
+(signal SIGKILL 'ctrlC-handler)
+(signal SIGQUIT 'ctrlC-handler)
+(signal SIGABRT 'ctrlC-handler)
+(signal SIGSTOP 'ctrlC-handler)
+(signal SIGTERM 'ctrlC-handler)
+
+
+
+;; keep it simple for now.
+
+(error-event 'ctrlC-handler)
+
+;; Cpu Load
+(setq *CPU-STATS* (list (list 0 0 0 0 0)))
+(setq *CPU-LOADS* (list 0 0))
+
+
+(define (get-disk) 
+  (setq df-results (exec "df"))
+  (map (fn (x)
+	 (let ((y (parse x)))
+	   (list (nth 0 y) (nth 4 y))
+	 ))
+	 (rest df-results))
+)
+
+(define (get-dbar fs per)
+   (first (exec  (append "echo " per "| gdbar -l " fs) ))
+)
+
+
+
+(define (get-dbar-results)
+  (let ((df-result (get-disk)) )
+    (map (fn (x)
+	   (if (not (nil? (find "cemnt" (first x)) ))
+	       (get-dbar (last (parse (first x) "/"))  (nth 1 x)) ))
+df-result))
+)
+
+
+
+(define (get-free) 
+  (setq free-results (exec "free"))
+  (parse (last free-results))
+ )
+
+
+
+(define (get-mem-dbar-results)
+  (setq free-result (get-free))
+  (get-dbar "MEM:" 
+  (string (round (mul 
+		 (div 
+		  (float (nth 2 free-result)) 
+		  (float (nth 1 free-result))) 100 ) 0) ) )
+)
+
+(define (get-cpu-dbar-results)
+ (get-dbar "cpu" (string (round (nth 0  *CPU-LOADS* ))))
+)
+
+
+;; = Config =
+
+(define (take alist anumber)
+  (let ((i 0) (resultlist '()) )
+    (while (< i anumber) 
+      (setq resultlist (append resultlist (list (nth i alist ))))
+      (setq i (+ i 1)) 
+     )
+    resultlist))
+
+(define (accumulate alist)
+  (let ((i 0) (resultnumber 0) )
+    (while (< i (length alist)) 
+      (setq resultnumber (+ resultnumber (nth i alist)))
+      (setq i (+ i 1))
+     )
+    resultnumber))
+  
+(define (update-cpu-loads)
+    (let (fp line)
+       (setq fp (open  "/proc/stat" "r" ) )
+       (setq line (read-line fp))
+
+       (while (not (null? line))
+	 (if (and (= (slice line 0 3) "cpu") 
+		  (not (= (slice line 0 4 ) "cpu ")) )
+	   (let ()
+	     (setq tokens (parse line))
+		  (setq core (integer (slice (first tokens) 3 3 )))
+		  (if (< core (length CPU-CORES))
+		      (letn ((oldstat (nth core  *CPU-STATS*))
+			     (newstat (map integer (take (rest tokens) 5) ))
+			     (diffs (map - newstat oldstat))
+			     (total (/ (accumulate  diffs) 100.0))
+			     (idlediff (nth 3 diffs))
+			     (cpuload (/   (- (accumulate  diffs) idlediff ) total))
+			     )
+			(setf  (nth core *CPU-STATS*) newstat)
+			(setf (nth  core *CPU-LOADS*) cpuload)
+			))) )
+       (setq line (read-line fp)))
+    (close fp)
+    ))
+
+
+;; Date
+(setq *DATE&TIME* "")
+
+(define (update-date&time)
+  (let ()
+    (setq *DATE&TIME* (first (exec  (append "date +" DATE-FORMAT ))))
+   )
+)
+  
+;; Display status line
+(define (display-status-line)
+  (let ((information-line (format
+			   "^bg() %d %s ^fg(white)%s^fg() \n"
+                           (round (nth 0  *CPU-LOADS* ))
+                            SEPARATOR
+                           *DATE&TIME*)))
+    ;(println information-line )
+    information-line
+))
+
+(define (process_exists the_pid)
+  (setq get_process (exec "ps"))
+  (not (for-all 
+   (fn (x) 
+     (not (= the_pid (first (parse x))) ))
+   get_process) ) 
+)
+
+
+(define (main)
+
+  (map set '(myin bcout) (pipe))
+  (map set '(bcin myout) (pipe))
+;;  (setq pid 
+;;       (process "/opt/home/papo/bin/dzen2 -bg gray10 -y 500 -l 4 -w 400 -p -ta l -sa l -e 'onstart=uncollapse'") bcin 0 )
+
+  ;;(setq pid (process "/usr/local/bin/dzen2 -p -bg gray10 -fn fixed -x 200 -w 650  -ta r  " bcin 0))
+  (setq pid (process "/opt/home/papo/bin/dzen2 -bg \#0C0C0C  -p -ta r -e 'onstart=lower\;button3=exit' " bcin 0))
+
+  (while (not nil)
+	 (map (fn (x)
+		    (if (not (nil? (find "sd" x)))
+			(write myout (format "%s " x))) )
+	   (get-dbar-results))
+	 (write myout SEPARATOR)
+	 (write myout " ")
+	 (write myout (get-mem-dbar-results))
+	 (write myout " ")
+	 ;(write myout (get-cpu-dbar-results))
+	 (write myout (last  (exec "gcpubar -i 1 -c 5  ")))
+	 (write-line myout)
+	 (sleep 10000)
+	 (if (not (process_exists (string pid)) )
+	     (throw 0))
+	 
+	 )
+  (destroy pid)
+)
+
+(main)

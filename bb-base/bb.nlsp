@@ -1,0 +1,122 @@
+#!/usr/bin/env newlisp
+
+#
+# BBPROG SHOULD JUST CONTAIN THE NAME OF THIS FILE
+# USEFUL WHEN YOU GET ENVIRONMENT DUMPS TO LOCATE
+# THE OFFENDING SCRIPT...
+#
+
+(setq BBPROG="bb.nlsp")
+
+#
+# TEST NAME: THIS WILL BECOME A COLUMN ON THE DISPLAY
+# IT SHOULD BE AS SHORT AS POSSIBLE TO SAVE SPACE...
+# NOTE YOU CAN ALSO CREATE A HELP FILE FOR YOUR TEST
+# WHICH SHOULD BE PUT IN www/help/$TEST.html.  IT WILL
+# BE LINKED INTO THE DISPLAY AUTOMATICALLY.
+#
+
+(setq TEST "base")
+
+(constant 'GREEN "green")
+(constant 'YELLOW "yellow")
+(constant 'PURPLE "purple")
+(constant 'RED "red")
+
+#
+# BBHOME CAN BE SET MANUALLY WHEN TESTING.
+# OTHERWISE IT SHOULD BE SET FROM THE BB ENVIRONMENT
+#
+
+(if (= (env "BBHOME") "")
+    (println "BBHOME is not set... exiting")
+;    (exit 1)
+)
+
+
+
+(if (= (env "BBTMP") "")
+    (println "BBTMP is not set... exiting")
+;    (exit 1)
+)
+
+
+#
+# NOW COLLECT SOME DATA
+# IN THIS CASE, IT'S THE CURRENT MEMORY USAGE OF THE SYSTEM
+
+# SELECT SOME LEVELS... GREEN IS THE DEFAULT...
+
+#
+# GET CURRENT VALUES
+#
+
+(setq DATA-LINE (define (gather-data)) 0 )
+(setq VALUE (let () DATA-LINE))
+
+#
+# WRITE OUR OWN VALUES TO LOG
+#
+
+;(println MYSQL_UPTIME)
+
+(!
+ (format "echo \"%s\" > %s/%s.%s.test.log"
+	 VALUE
+	 (env "BBTMP")
+	 (env "MACHINE")
+	 TEST) )
+
+
+
+(setq COLOR GREEN)
+(setq STATUS "OK")
+
+
+#
+# HANDLE YELLOW CONDITIONS
+#
+
+
+(cond 
+
+ ((yellow?)
+  (begin
+    (setq COLOR YELLOW)
+    (setq STATUS "Yellow ")))
+
+#
+# HANDLE RED CONDITIONS
+#
+
+  ((red?)
+   (begin
+     (setq COLOR RED )
+     (setq STATUS "Red Status"))) )
+
+(setq fp (open (format "%s/status.%s" (env "BBLOGS") TEST ) write))
+(write-line fp DATA-LINE)
+(close fp)
+
+;(println (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
+;	   (env "BB")
+;	   (env "BBDISP")
+;	   (env "MACHINE")
+;	   TEST   
+;	   COLOR
+;	   (date)
+;	   STATUS
+;	   MYSQLLINE))
+
+
+(! (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
+	   (env "BB")
+	   (env "BBDISP")
+	   (env "MACHINE")
+	   TEST   
+	   COLOR
+	   (date)
+	   STATUS
+	   DATA-LINE))
+
+(exit 0)

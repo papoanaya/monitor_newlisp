@@ -1,0 +1,125 @@
+;; = Config =
+(define DATE-FORMAT "'%A, %d.%m.%Y %H:%M:%S'")
+;(define DZEN-ICONPATH "/home/bruno/.config/dzen2/bitmaps")
+
+;; Appareance
+;(define FONT "'-*-profont-*-*-*-*-11-*-*-*-*-*-iso8859'")
+(define FONT "fixed")
+
+(define BACKGROUND-COLOR "'#2c2c32'")
+(define ALTERNATE-BACKGROUND-COLOR "'#494b4f'")
+(define FOREGROUND-COLOR "'grey70'")
+(define SEPARATOR "^p(3)^r(3x3)^p(3)")
+
+;; Cpu settings
+(define CPU-CORES (list 0))
+
+;; Main loop interval in seconds
+(define SLEEP-INTERVAL 1)
+
+
+;; Cpu Load
+(setq *CPU-STATS* (list (list 0 0 0 0 0)))
+(setq *CPU-LOADS* (list 0 0))
+
+(define (take alist anumber)
+  (let ((i 0) (resultlist '()) )
+    (while (< i anumber) 
+      (setq resultlist (append resultlist (list (nth i alist ))))
+      (setq i (+ i 1)) 
+     )
+    resultlist))
+
+(define (accumulate alist)
+  (let ((i 0) (resultnumber 0) )
+    (while (< i (length alist)) 
+      (setq resultnumber (+ resultnumber (nth i alist)))
+      (setq i (+ i 1))
+     )
+    resultnumber))
+  
+(define (update-cpu-loads)
+    (let (fp line)
+       (setq fp (open  "/proc/stat" "r" ) )
+       (setq line (read-line fp))
+
+       (while (not (null? line))
+	 (if (and (= (slice line 0 3) "cpu") 
+		  (not (= (slice line 0 4 ) "cpu ")) )
+	   (let ()
+	     (setq tokens (parse line))
+		  (setq core (integer (slice (first tokens) 3 3 )))
+		  (if (< core (length CPU-CORES))
+		      (letn ((oldstat (nth core  *CPU-STATS*))
+			     (newstat (map integer (take (rest tokens) 5) ))
+			     (diffs (map - newstat oldstat))
+			     (total (/ (accumulate  diffs) 100.0))
+			     (idlediff (nth 3 diffs))
+			     (cpuload (/   (- (accumulate  diffs) idlediff ) total))
+			     )
+			(setf  (nth core *CPU-STATS*) newstat)
+			(setf (nth  core *CPU-LOADS*) cpuload)
+			))) )
+       (setq line (read-line fp)))
+    (close fp)
+    ))
+
+
+;; Date
+(setq *DATE&TIME* "")
+
+(define (update-date&time)
+  (let ()
+    (setq *DATE&TIME* (first (exec  (append "date +" DATE-FORMAT ))))
+   )
+)
+  
+;; Display status line
+(define (display-status-line)
+  (let ((information-line (format
+			   "^bg() %d %s ^fg(white)%s^fg() \n"
+                           (round (nth 0  *CPU-LOADS* ))
+                            SEPARATOR
+                           *DATE&TIME*)))
+    ;(println information-line )
+    information-line
+))
+
+
+(define (process_exists the_pid)
+  (setq get_process (exec "ps"))
+  (not (for-all 
+   (fn (x) 
+     (not (= the_pid (first (parse x))) ))
+   get_process) ) 
+)
+
+
+ ; (call-with-output-process (string-append "dzen2 -ta r -fn "
+ ;                                          FONT
+ ;                                          " -bg "
+ ;                                          BACKGROUND-COLOR
+ ;                                          " -fg "
+ ;                                          FOREGROUND-COLOR
+ ;                                          " -p -e ''")
+
+(define (main)
+;  (map set '(myin dzout) (pipe))
+;  (map set '(dzin myout) (pipe))
+
+;  (process (append  "dzen2 -ta r -fn "
+;		    FONT  
+;		    " -bg "
+;		    BACKGROUND-COLOR
+;		    " -fg "
+;		    FOREGROUND-COLOR
+;		    " -p  -e ''") dzin dzout )
+;	 (write myout (display-status-line) )
+
+  (while true
+	 (update-cpu-loads)
+	 (update-date&time)
+	 (print (display-status-line))
+	 (sleep (* SLEEP-INTERVAL 1000))
+        ))
+(main)
