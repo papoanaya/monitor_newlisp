@@ -123,14 +123,14 @@
 ;	   MYSQLLINE))
 
 
-(! (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:slow:GAUGE:600:0:U %d"
+(! (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:slow:GAUGE:600:0:U %d\""
 	   (env "BB")
 	   (env "BBDISP")
 	   (env "MACHINE")
 	   (int MYSQL_DSLOWQ)))
 
 
-(! (format "%s %s \"data %s.trends\n[mysqlthread.rrd]\nDS:threads:GAUGE:600:0:U %d"
+(! (format "%s %s \"data %s.trends\n[mysqlthread.rrd]\nDS:threads:GAUGE:600:0:U %d\""
 	   (env "BB")
 	   (env "BBDISP")
 	   (env "MACHINE")
