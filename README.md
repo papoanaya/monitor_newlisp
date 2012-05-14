@@ -1,12 +1,15 @@
-DZEN2_NEWLISP
+MONITOR_NELISP
 ============
 Motivation
 ----------
 
-Needed a set of scripts to monitor systems that do not take a lot of 
-resources and does not flicker. Dzen2 fit the bill for this purposes. 
-Included is a list of scripts that I developed for monitor Linux
-systems.
+Needed a set of newlisp scripts to monitor Linux systems 
+that do not take a lot of  resources. 
+
+This includes:
+
+* DZen Monitoring Scripts
+* Xymon/BigBrother/Hobbit Monitoring Scripts
 
 Known Issues
 ------------
