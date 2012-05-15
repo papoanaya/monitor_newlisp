@@ -7,6 +7,7 @@
 #
 
 (setq BBPROG="bb-mysqlstat-trends.nlsp")
+(setq TEST "mysql")
 
 #
 # TEST NAME: THIS WILL BECOME A COLUMN ON THE DISPLAY
@@ -53,9 +54,6 @@
       (setq MYSQLADMIN (parse MYSQLLINE)))
 )
 
-;(println MYSQLADMIN)
-;(println MYSQLLINE)
-
 (setq MYSQL_UPTIME (nth 1 MYSQLADMIN ))
 (setq MYSQL_THREADS (nth 3 MYSQLADMIN))
 (setq MYSQL_SLOWQ (nth 8 MYSQLADMIN))
@@ -69,39 +67,30 @@
 (setq MYSQL_OLDUPTIME 0)
 (setq MYSQL_OLDSLOWQ 0)
 
-(catch 
- (setq MYSQL_OLDUPTIME (first (exec (format "%s %s/%s.%s.mysqluptime.log"
-					      (env "CAT")
-					      (env "BBTMP")
-					      (env "MACHINE")
-					      TEST)))) 'result)
+
+
 (catch
- (setq MYSQL_OLDSLOWQ  (first (exec (format "%s %s/%s.%s.mysqlslowq.log"
+ (setq MYSQL_OLDSLOWQ  (first (exec (format "%s %s/%s.%s.mysqlslowq-trends.log"
 					      (env "CAT")
 					      (env "BBTMP")
 					      (env "MACHINE")
 					      TEST)))) 'result)
 
+
+
+(setq MYSQL_DSLOWQ (-  (int MYSQL_OLDSLOWQ) (int MYSQL_SLOWQ)))
 
 #
 # WRITE OUR OWN VALUES TO LOG
 #
 
-;(println MYSQL_UPTIME)
 
-;(!
-; (format "echo \"%s\" > %s/%s.%s.mysqluptime.log"
-;	 MYSQL_UPTIME 
-;	 (env "BBTMP")
-;	 (env "MACHINE")
-;	 TEST) )
-
-;(!
-; (format "echo \"%s\" > %s/%s.%s.mysqlslowq.log"
-;	 MYSQL_SLOWQ
-;	 (env "BBTMP")
-;	 (env "MACHINE")
-;	 TEST) )
+(!
+ (format "echo \"%s\" > %s/%s.%s.mysqlslowq-trends.log"
+	 MYSQL_SLOWQ
+	 (env "BBTMP")
+	 (env "MACHINE")
+	 TEST) )
 
 
 
@@ -109,32 +98,27 @@
 # COMPUTE DIFFERENCES
 #
 
-(setq MYSQL_DSLOWQ (-  (int MYSQL_SLOWQ) (int MYSQL_OLDSLOWQ)))
 
 
-;(println (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
+;(println (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:slow:GAUGE:600:0:U %d\""
 ;	   (env "BB")
 ;	   (env "BBDISP")
 ;	   (env "MACHINE")
-;	   TEST   
-;	   COLOR
-;	   (date)
-;	   STATUS
-;	   MYSQLLINE))
+;	   (int MYSQL_DSLOWQ)))
 
 
-(! (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:slow:GAUGE:600:0:U %d\""
+(! (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:mysqlslow:GAUGE:600:0:U %d\""
 	   (env "BB")
 	   (env "BBDISP")
 	   (env "MACHINE")
 	   (int MYSQL_DSLOWQ)))
 
 
-(! (format "%s %s \"data %s.trends\n[mysqlthread.rrd]\nDS:threads:GAUGE:600:0:U %d\""
+(! (format "%s %s \"data %s.trends\n[mysqlthread.rrd]\nDS:mysqlthread:GAUGE:600:0:U %d\""
 	   (env "BB")
 	   (env "BBDISP")
 	   (env "MACHINE")
 	   (int MYSQL_THREADS)))
 
 
-(exit)
+(exit 0)
