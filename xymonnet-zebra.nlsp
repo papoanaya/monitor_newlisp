@@ -1,0 +1,128 @@
+#!/usr/bin/env newlisp
+
+(if (= (env "BBHOME") "")
+    (begin
+      (println "BBHOME is not set")
+					;(exit 1)
+    )
+)
+
+(if (= (env "BBRDS") "")
+    (begin
+      (println "BBRDS is not set")
+					;(exit 1)
+    )
+)
+
+(if (not (directory? (env "BBHOME")))
+    (begin
+      (println "BBHOME is invalid")
+      (exit 1)
+      )
+)
+
+(set 'TESTNAME "zebranet")
+(set 'MACHINE "router")
+
+# go to the logs area for simplication of the list
+
+
+
+; Open socket
+; Send password
+; Set terminal length to 0, "terminal length 0\n"
+; show interface br0
+; show interface eth2 (1 to 2)
+; exit
+
+;
+; Simple connect script
+; 
+;(set 'fp (open "/tmp/salida" "w"))
+(define (get-stat)
+  (write-file 
+   (append (env "BBTMP") "/" MACHINE ".zebra.out")
+   (let (outbuffer "")
+     (set 'socket (net-connect "192.168.10.1" 2601))
+     (net-receive socket buffer 10000)
+ ;    (println buffer)
+     (net-send socket "sekret\r\n\r\n")
+     (net-receive socket buffer 10000)
+     (net-send socket "terminal length 0\r\n\r\n")
+     (net-receive socket buffer 10000)
+
+     (dolist (item '("br0" "eth2" "eth2.2" ))
+		   (net-send socket (format "show interface %s\r\n\r\n" item))
+		   (net-receive socket buffer 10000)
+		   (setq outbuffer (append outbuffer buffer)))
+
+     (setq outbuffer (append outbuffer  "\n"))
+;    (write-file "salida.txt"  buffer)
+     (net-send socket "exit\r\n\r\n")
+     (net-close socket)
+     outbuffer) )
+)
+;
+; Analyze will get the buffer 
+;
+
+(define (analyze-stat)
+  (setq buffer (read-file 
+		(append (env "BBTMP") "/" MACHINE ".zebra.out")))
+  (let ((old-interface-name "")
+	(result '()))
+    (dolist (line-item (parse buffer "\n"))
+	    (cond
+	     ((find "Interface " line-item)
+	      (begin
+		(setq interface-name (nth 1 (parse line-item)))))
+	     ((find "input packets" line-item)
+	      (begin
+		(set 'comma-parse (parse line-item ","))
+		(set 'bytes (nth 1 (parse (nth 1 comma-parse))))
+		(set 'input-mbytes (/ (int bytes) 1000) )))
+	     ((find "output packets" line-item)
+	      (begin
+		(set 'comma-parse (parse line-item ","))
+		(set 'bytes (nth 1 (parse (nth 1 comma-parse))))
+		(set 'output-mbytes (/ (int bytes) 1000)) 
+		(setq result 
+		      (append result 
+			      (list (list interface-name input-mbytes output-mbytes))))))
+	     ))
+    result)
+)  
+
+
+(if (= TESTNAME "zebranet")
+    (begin
+      (get-stat)
+      (set 'values (analyze-stat))
+
+#
+# COMPUTE DIFFERENCES
+#
+
+
+
+;(println (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:slow:COUNTER:600:0:U %d\""
+;	   (env "BB")
+;	   (env "BBDISP")
+;	   (env "MACHINE")
+;	   (int MYSQL_DSLOWQ)))
+
+  (dolist (value-item values)
+	  (! (format 
+	      (append "%s %s \"data %s.trends\n[zebranet.%s.rrd]\n" 
+		      "DS:up:COUNTER:600:0:U %d\n"
+		      "DS:down:COUNTER:600:0:U %d\"")
+	   (env "BB")
+	   (env "BBDISP")
+	   MACHINE
+	   (nth 0 value-item) 
+	   (int (nth 1 value-item))
+	   (int (nth 2 value-item))) )) 
+  ))
+
+(exit 0)
+
