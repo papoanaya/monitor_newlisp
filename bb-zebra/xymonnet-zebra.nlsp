@@ -1,5 +1,27 @@
 #!/usr/bin/env newlisp
 
+;****** monitor_newlisp/xymonnet-zebra
+;
+; NAME 
+;   xymonnet-zebra
+; 
+; SYNOPSIS 
+;   Monitor utility for trendnet routers that support zebra.
+;   It connects to the router and authenticates to the zebra port
+;   Gets data from the network interfaces and stores them in file
+;   Gets data from file and delivers network statistics.
+;    
+; AUTHOR 
+;    Luis R. Anaya
+; 
+; COPYRIGHT 
+;    (c) 2012 by Luis R. Anaya
+; 
+;******
+
+
+
+
 (if (= (env "BBHOME") "")
     (begin
       (println "BBHOME is not set")
@@ -21,24 +43,55 @@
       )
 )
 
+
+
+;****** xymonnet-zebra/machine-id
+; NOTES
+;   Being that this is a pull script, machine id needs
+;   to be hard coded
+;
+; SOURCE
+
+
 (set 'TESTNAME "zebranet")
 (set 'MACHINE "router")
 
+;****
+
 # go to the logs area for simplication of the list
 
-
-
-; Open socket
-; Send password
-; Set terminal length to 0, "terminal length 0\n"
-; show interface br0
-; show interface eth2 (1 to 2)
-; exit
-
+;****f* xymonnet-zebra/get-stat
 ;
-; Simple connect script
+;  NAME 
+;    get-stat
+;
+;  DESCRIPTION
+;    Gets router statistics for specific 
+;    network interfaces. Right now they are
+;    hard coded for the wifi network and the
+;    ethernet connection. 
+;
+;    It:
+;      * Open socket
+;      * Send password
+;      * Set terminal length to 0, "terminal length 0\n"
+;      * show interface br0
+;      * show interface eth2 (1 to 2)
+;      * exit
+;
+;  INPUTS
+;     None
 ; 
-;(set 'fp (open "/tmp/salida" "w"))
+;  OUTPUT
+;     Menu executes and an answer is obtained from the user.
+;   
+;  NOTES 
+;     It could be changed to make it more generic.. but it works
+; 
+;******
+
+
+
 (define (get-stat)
   (write-file 
    (append (env "BBTMP") "/" MACHINE ".zebra.out")
@@ -62,9 +115,38 @@
      (net-close socket)
      outbuffer) )
 )
+
+
+
+;****f* xymonnet-zebra/analyze-stat
 ;
-; Analyze will get the buffer 
+;  NAME 
+;    analyze-stat
 ;
+;  DESCRIPTION
+;    Parses the file containing the interface
+;    statistics
+;
+;    It:
+;      * Opens the file
+;      * Splits by newline
+;      * Gets interface name and statistics.
+;      * show interface br0
+;      * show interface eth2 (1 to 2)
+;      * exit
+;
+;  INPUTS
+;     None
+; 
+;  OUTPUT
+;     A list in which each element has the interface name, 
+;     input kilobytes, output kilobytes.
+;   
+;  NOTES 
+;     It could be changed to make it more generic.. but it works
+; 
+;******
+
 
 (define (analyze-stat)
   (setq buffer (read-file 
@@ -94,6 +176,23 @@
 )  
 
 
+;****** xymonnet-zebra/main
+;
+;  DESCRIPTION
+;    The following operations are done 
+;    to guide the collection and delivery
+;    of data:
+;    * Gets the statistics from the router.
+;    * Gets the list of input and output bytes.
+;    * Sends the data to Xymon for collection.
+;    
+;   
+;  NOTES 
+;     It could be changed to make it more generic.. but it works
+; 
+;******
+
+
 (if (= TESTNAME "zebranet")
     (begin
       (get-stat)
@@ -104,12 +203,6 @@
 #
 
 
-
-;(println (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:slow:COUNTER:600:0:U %d\""
-;	   (env "BB")
-;	   (env "BBDISP")
-;	   (env "MACHINE")
-;	   (int MYSQL_DSLOWQ)))
 
   (dolist (value-item values)
 	  (! (format 
@@ -125,4 +218,45 @@
   ))
 
 (exit 0)
+
+
+;****** xymonnet-zebra/configuration
+;
+;  DESCRIPTION
+;     To configure xymon to show these under
+;     thrends, the following needs to be configured
+;     in $XYMONHOME/etc
+;
+;     graphs.cfg
+; 
+;     Add an entry with the following configuration
+;     parameters for the graph.
+;    
+;[zebranet]
+;        FNPATTERN ^zebranet.(.+).rrd
+;        TITLE Router Traffic Satistics                          
+;        YAXIS Kilobytes
+;        DEF:in@RRDIDX@=@RRDFN@:up:AVERAGE
+;        DEF:out@RRDIDX@=@RRDFN@:down:AVERAGE
+;        LINE1:in@RRDIDX@#@COLOR@:@RRDPARAM@ Input               
+;        GPRINT:in@RRDIDX@:LAST: %6.1lf (cur) \:
+;        GPRINT:in@RRDIDX@:MAX: %6.1lf (max) \:
+;        GPRINT:in@RRDIDX@:MIN: %6.1lf (min) \:
+;        GPRINT:in@RRDIDX@:AVERAGE: %6.1lf (avg)\n
+;        LINE1:out@RRDIDX@#@COLOR@:@RRDPARAM@ Output
+;        GPRINT:out@RRDIDX@:LAST: %6.1lf (cur) \:
+;        GPRINT:out@RRDIDX@:MAX: %6.1lf (max) \:
+;        GPRINT:out@RRDIDX@:MIN: %6.1lf (min) \:
+;        GPRINT:out@RRDIDX@:AVERAGE: %6.1lf (avg)\n
+;   
+;   xymonserver.cfg
+;   At the end of the TEST2RRD and GRAPHS variables add
+;   "zebranet". This will tell xymon to show the zebranet
+;   graphs.
+;
+;   Add this script under the $XYMONHOME/etc for the server and add an a
+;   appropriate entry under $XYMONHOME/tasks.d/ to enable
+;   automated execution of this script.
+;   
+;******
 
