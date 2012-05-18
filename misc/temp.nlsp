@@ -12,24 +12,6 @@
 						   (append "0x" $1))) 1))
 
 
-(define (getSequenceDiagram text outputfile (style "default") )
-  (set 'request (list (eval 'text) (eval 'style)) )
-  (set 'urladdress "http://www.websequencediagrams.com/index.php")
-  (set 'urldata (join (list "message=" text "&style=" (url-encode
-						       style) )))
-  (set 'result (post-url  urladdress urldata ) )
-  (set 'expr (regex "(\\?img=[a-zA-Z0-9]+)" result ))
-  (if (nil? expr)
-      (write-line "Something went wrong")
-      (let ()
-	(set 'image (get-url (join (list
-				    "http://www.websequencediagrams.com/" (first expr) ) )) )
-	(write-file outputfile image) 
-	)
-      )
-  )
-
-
 (define (getWxInformation cityname site state warnzone)
   (set 'request (list (eval 'cityname) 
 		      (eval 'site) 
@@ -47,12 +29,11 @@
 
   (set 'result (post-url  urladdress urldata ) )
  ; (println (xml-parse (url-decode result)))
-  (println result)
   (set 'expr (regex "(\\?img=[a-zA-Z0-9]+)" result ))
 
-)
+result)
  
 ;(getSequenceDiagram "alice->bob: authentication
 ;request \n bob-->alice: response" "c:\\out.png" "qsd")
 
-(getWxInformation "Piscataway" "PHI" "NJ" "NJZ012")
+( println (getWxInformation "Piscataway" "PHI" "NJ" "NJZ012"))
