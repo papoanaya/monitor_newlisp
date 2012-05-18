@@ -91,17 +91,19 @@
 
 
 
-;; keep it simple for now.
-
-(error-event 'ctrlC-handler)
-
 ;; Cpu Load
 (setq *CPU-STATS* (list (list 0 0 0 0 0)))
 (setq *CPU-LOADS* (list 0 0))
 
 
 (define (get-disk) 
-  (setq df-results (exec "df"))
+  ;*****
+  ; NOTES
+  ;
+  ; SOURCE 
+  (setq df-results (exec "df -P"))
+  ;******
+
   (map (fn (x)
 	 (let ((y (parse x)))
 	   (list (nth 0 y) (nth 4 y))
@@ -126,7 +128,7 @@ df-result))
 
 
 (define (get-free) 
-  (setq free-results (exec "free"))
+  (setq free-results (exec "free -t"))
   (parse (last free-results))
  )
 
@@ -164,32 +166,6 @@ df-result))
      )
     resultnumber))
   
-(define (update-cpu-loads)
-    (let (fp line)
-       (setq fp (open  "/proc/stat" "r" ) )
-       (setq line (read-line fp))
-
-       (while (not (null? line))
-	 (if (and (= (slice line 0 3) "cpu") 
-		  (not (= (slice line 0 4 ) "cpu ")) )
-	   (let ()
-	     (setq tokens (parse line))
-		  (setq core (integer (slice (first tokens) 3 3 )))
-		  (if (< core (length CPU-CORES))
-		      (letn ((oldstat (nth core  *CPU-STATS*))
-			     (newstat (map integer (take (rest tokens) 5) ))
-			     (diffs (map - newstat oldstat))
-			     (total (/ (accumulate  diffs) 100.0))
-			     (idlediff (nth 3 diffs))
-			     (cpuload (/   (- (accumulate  diffs) idlediff ) total))
-			     )
-			(setf  (nth core *CPU-STATS*) newstat)
-			(setf (nth  core *CPU-LOADS*) cpuload)
-			))) )
-       (setq line (read-line fp)))
-    (close fp)
-    ))
-
 
 ;; Date
 (setq *DATE&TIME* "")
@@ -207,7 +183,6 @@ df-result))
                            (round (nth 0  *CPU-LOADS* ))
                             SEPARATOR
                            *DATE&TIME*)))
-    ;(println information-line )
     information-line
 ))
 
@@ -224,10 +199,6 @@ df-result))
 
   (map set '(myin bcout) (pipe))
   (map set '(bcin myout) (pipe))
-;;  (setq pid 
-;;       (process "/opt/home/papo/bin/dzen2 -bg gray10 -y 500 -l 4 -w 400 -p -ta l -sa l -e 'onstart=uncollapse'") bcin 0 )
-
-  ;;(setq pid (process "/usr/local/bin/dzen2 -p -bg gray10 -fn fixed -x 200 -w 650  -ta r  " bcin 0))
   (setq pid (process "/opt/home/papo/bin/dzen2 -bg \#0C0C0C  -p -ta r -e 'onstart=lower\;button3=exit' " bcin 0))
 
   (while (not nil)
@@ -239,7 +210,6 @@ df-result))
 	 (write myout " ")
 	 (write myout (get-mem-dbar-results))
 	 (write myout " ")
-	 ;(write myout (get-cpu-dbar-results))
 	 (write myout (last  (exec "gcpubar -i 1 -c 5  ")))
 	 (write-line myout)
 	 (sleep 10000)
