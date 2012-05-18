@@ -6,7 +6,7 @@
 ; 
 ; SYNOPSIS 
 ;    Gets temperature information from the National Weather Service
-;    site and sends them into a "trends" database in xymon. 
+;    site and sends them into a RRD database in xymon. 
 ;    
 ; AUTHOR 
 ;    Luis R. Anaya
@@ -38,7 +38,7 @@
       )
 )
 
-;****** xymonnet-zebra/machine-id
+;****** xymonnet-temperature/machine-id
 ; NOTES
 ;   Being that this is a pull script, machine id may need
 ;   to be hard coded. Right now is getting the machine name
@@ -53,7 +53,7 @@
 ;*****
 
 
-;****f* xymonnet-zebra/url-encode
+;****f* xymonnet-temperature/url-encode
 ;
 ;  NAME 
 ;    url-encode
@@ -73,7 +73,7 @@
 (define (url-encode str) 
     (replace {([^a-zA-Z0-9])} str (format "%%%2X" (char $1)) 0))
     
-;****f* xymonnet-zebra/url-decode
+;****f* xymonnet-temperature/url-decode
 ;
 ;  NAME 
 ;    url-decode
@@ -95,21 +95,30 @@
   (replace "%([0-9A-F][0-9A-F])" str (format "%c" (int
 						   (append "0x" $1))) 1))
 
-;****f* xymonnet-zebra/getWxInformation
+;****f* xymonnet-temperature/getWxInformation
 ;
 ;  NAME 
 ;    getWxInformation
 ;
 ;  DESCRIPTION
-;
+;    Gets the weather information from that National Weather Service
+;    (mobile.weather.gov). The mobile site was selected because
+;    it has less data to parse through and it would have less 
+;    impact on the network. 
+;   
 ;  INPUTS
-;     None
+;     cityname - City Name
+;     site - NWS Site
+;     state - State or territory
+;     warnzone - Warn advisory zone
 ; 
 ;  OUTPUT
-;     Menu executes and an answer is obtained from the user.
+;     Retrieves current weather information
 ;   
 ;  NOTES 
-;     It could be changed to make it more generic.. but it works
+;     To obtain the 4 parameter values, go to mobile.weather.gov
+;     Select your zipcode and get the weather information. The values
+;     will be printed on the top of the URL string in your browser.
 ; 
 ;******
 
@@ -122,10 +131,6 @@
 
   (set 'urladdress "http://mobile.weather.gov/port_mp_ns.php/")
 
-;  (set 'urldata (join (list "CityName=" (url-encode cityname )
-;			    "&site=" (url-encode site) 
-;			    "&warnzone=" (url-encode warnzone) )))
-
   (set 'urldata (join (list "select=3CityName=" (url-encode cityname )
 			    "&site=" (url-encode site) 
 			    "&warnzone=" (url-encode warnzone) )))
@@ -135,33 +140,20 @@
 result)
 
 
-;****f* xymonnet-zebra/get-stat
+;****f* xymonnet-temperature/getTemp
 ;
 ;  NAME 
-;    get-stat
+;    getTemp
 ;
 ;  DESCRIPTION
-;    Gets router statistics for specific 
-;    network interfaces. Right now they are
-;    hard coded for the wifi network and the
-;    ethernet connection. 
-;
-;    It:
-;      * Open socket
-;      * Send password
-;      * Set terminal length to 0, "terminal length 0\n"
-;      * show interface br0
-;      * show interface eth2 (1 to 2)
-;      * exit
-;
+;    Gets the temperature information in Farenheith 
+;    from the results from a getWxInformationCall
+;  
 ;  INPUTS
-;     None
+;     Buffer from the getWxInformation Call
 ; 
 ;  OUTPUT
-;     Menu executes and an answer is obtained from the user.
-;   
-;  NOTES 
-;     It could be changed to make it more generic.. but it works
+;     Temperature on the location in Farenheith
 ; 
 ;******
 
@@ -176,19 +168,20 @@ result)
 		  (println temperature) )))
     temperature))
 
-;****** xymonnet-zebra/main
+;****** xymonnet-temperature/main
 ;
 ;  DESCRIPTION
 ;    The following operations are done 
 ;    to guide the collection and delivery
 ;    of data:
-;    * Gets the statistics from the router.
-;    * Gets the list of input and output bytes.
+;    * Gets the statistics from NWS.
+;    * Creates a list with the city and temperature
 ;    * Sends the data to Xymon for collection.
 ;    
 ;   
 ;  NOTES 
-;     It could be changed to make it more generic.. but it works
+;     City is hard coded, but I'll leave structure as it is
+;     for future development.
 ; 
 ;******
 		
@@ -215,7 +208,7 @@ result)
 (exit 0)
 
 
-;****** xymonnet-zebra/configuration
+;****** xymonnet-temperature/configuration
 ;
 ;  DESCRIPTION
 ;     To configure xymon to show these under
@@ -226,27 +219,21 @@ result)
 ; 
 ;     Add an entry with the following configuration
 ;     parameters for the graph.
+;[wx]
+;	FNPATTERN ^wx.(.+).rrd
+;	TITLE Ambient Temperature
+;	YAXIS F
+;	DEF:temperature@RRDIDX@=@RRDFN@:temperature:AVERAGE
+;	LINE1:temperature@RRDIDX@#@COLOR@:@RRDPARAM@ Temperature
+;	GPRINT:temperature@RRDIDX@:LAST: %6.1lf (cur) \:
+;	GPRINT:temperature@RRDIDX@:MAX: %6.1lf (max) \:
+;	GPRINT:temperature@RRDIDX@:MIN: %6.1lf (min) \:
+;	GPRINT:temperature@RRDIDX@:AVERAGE: %6.1lf (avg)\n
 ;    
-;[zebranet]
-;        FNPATTERN ^zebranet.(.+).rrd
-;        TITLE Router Traffic Satistics                          
-;        YAXIS Kilobytes
-;        DEF:in@RRDIDX@=@RRDFN@:up:AVERAGE
-;        DEF:out@RRDIDX@=@RRDFN@:down:AVERAGE
-;        LINE1:in@RRDIDX@#@COLOR@:@RRDPARAM@ Input               
-;        GPRINT:in@RRDIDX@:LAST: %6.1lf (cur) \:
-;        GPRINT:in@RRDIDX@:MAX: %6.1lf (max) \:
-;        GPRINT:in@RRDIDX@:MIN: %6.1lf (min) \:
-;        GPRINT:in@RRDIDX@:AVERAGE: %6.1lf (avg)\n
-;        LINE1:out@RRDIDX@#@COLOR@:@RRDPARAM@ Output
-;        GPRINT:out@RRDIDX@:LAST: %6.1lf (cur) \:
-;        GPRINT:out@RRDIDX@:MAX: %6.1lf (max) \:
-;        GPRINT:out@RRDIDX@:MIN: %6.1lf (min) \:
-;        GPRINT:out@RRDIDX@:AVERAGE: %6.1lf (avg)\n
 ;   
 ;   xymonserver.cfg
 ;   At the end of the TEST2RRD and GRAPHS variables add
-;   "zebranet". This will tell xymon to show the zebranet
+;   "wx". This will tell xymon to show the zebranet
 ;   graphs.
 ;
 ;   Add this script under the $XYMONHOME/etc for the server and add an a
