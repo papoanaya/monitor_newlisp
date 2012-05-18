@@ -6,10 +6,11 @@
 ;   xymonnet-zebra
 ; 
 ; SYNOPSIS 
-;   Monitor utility for trendnet routers that support zebra.
-;   It connects to the router and authenticates to the zebra port
-;   Gets data from the network interfaces and stores them in file
-;   Gets data from file and delivers network statistics.
+;   Monitor utility for trendnet routers that support zebra. 
+;   It performs the following tasks:
+;   * Connects to the router and authenticates to the zebra port
+;   * Gets data from the network interfaces and stores them in file
+;   * Gets data from file and delivers network statistics.
 ;    
 ; AUTHOR 
 ;    Luis R. Anaya
@@ -69,15 +70,13 @@
 ;    Gets router statistics for specific 
 ;    network interfaces. Right now they are
 ;    hard coded for the wifi network and the
-;    ethernet connection. 
-;
-;    It:
-;      * Open socket
-;      * Send password
-;      * Set terminal length to 0, "terminal length 0\n"
-;      * show interface br0
-;      * show interface eth2 (1 to 2)
-;      * exit
+;    ethernet connection.  It:
+;    * Opens a  socket
+;    * Sends a password
+;    * Sets terminal length to 0, "terminal length 0\n"
+;    * Shows interface br0
+;    * Shows interface eth2 (1 to 2)
+;    * Exits
 ;
 ;  INPUTS
 ;     None
@@ -124,15 +123,13 @@
 ;
 ;  DESCRIPTION
 ;    Parses the file containing the interface
-;    statistics
-;
-;    It:
-;      * Opens the file
-;      * Splits by newline
-;      * Gets interface name and statistics.
-;      * show interface br0
-;      * show interface eth2 (1 to 2)
-;      * exit
+;    statistics. It will do the following tasks:
+;    * Opens the file
+;    * Splits by newline
+;    * Gets interface name and statistics.
+;    * Shows interface br0
+;    * Shows interface eth2 (1 to 2)
+;    * Exits
 ;
 ;  INPUTS
 ;     None
@@ -224,12 +221,13 @@
 ;  DESCRIPTION
 ;     To configure xymon to show these under
 ;     thrends, the following needs to be configured
-;     in $XYMONHOME/etc
-;
-;     graphs.cfg
+;     in $XYMONHOME/etc:
+;     * graphs.cfg
+;     * xymonserver.cfg
 ; 
-;     Add an entry with the following configuration
+;     Add an entry in graphs.cfg with the following configuration
 ;     parameters for the graph.
+;
 ;    
 ;          [zebranet]
 ;              FNPATTERN ^zebranet.(.+).rrd
@@ -248,8 +246,8 @@
 ;              GPRINT:out@RRDIDX@:MIN: %6.1lf (min) \:
 ;              GPRINT:out@RRDIDX@:AVERAGE: %6.1lf (avg)\n
 ;   
-;   xymonserver.cfg
-;   At the end of the TEST2RRD and GRAPHS variables add
+;   
+;   In xymonserver.cfg, at the end of the TEST2RRD and GRAPHS variables, add
 ;   "zebranet". This will tell xymon to show the zebranet
 ;   graphs.
 ;
