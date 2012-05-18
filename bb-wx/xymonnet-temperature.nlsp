@@ -1,0 +1,259 @@
+#!/opt/bin/env newlisp
+;****** monitor_newlisp/xymonnet-temperature
+;
+; NAME 
+;   xymonnet-temperature
+; 
+; SYNOPSIS 
+;    Gets temperature information from the National Weather Service
+;    site and sends them into a "trends" database in xymon. 
+;    
+; AUTHOR 
+;    Luis R. Anaya
+; 
+; COPYRIGHT 
+;    (c) 2012 by Luis R. Anaya
+; 
+;******
+
+
+(if (= (env "BBHOME") "")
+    (begin
+      (println "BBHOME is not set")
+					;(exit 1)
+    )
+)
+
+(if (= (env "BBRDS") "")
+    (begin
+      (println "BBRDS is not set")
+					;(exit 1)
+    )
+)
+
+(if (not (directory? (env "BBHOME")))
+    (begin
+      (println "BBHOME is invalid")
+      (exit 1)
+      )
+)
+
+;****** xymonnet-zebra/machine-id
+; NOTES
+;   Being that this is a pull script, machine id may need
+;   to be hard coded. Right now is getting the machine name
+;   from the xymon environment. 
+;
+; SOURCE
+
+
+(set 'TESTNAME "wx")
+(set 'MACHINE (env "MACHINE"))
+
+;*****
+
+
+;****f* xymonnet-zebra/url-encode
+;
+;  NAME 
+;    url-encode
+;
+;  DESCRIPTION
+;    Encodes strings to make it URL friendly. (like changing spaces to %20's)
+;
+;  INPUTS
+;     String to be encoded
+; 
+;  OUTPUT
+;     Encoded string
+; 
+;******
+
+
+(define (url-encode str) 
+    (replace {([^a-zA-Z0-9])} str (format "%%%2X" (char $1)) 0))
+    
+;****f* xymonnet-zebra/url-decode
+;
+;  NAME 
+;    url-decode
+;
+;  DESCRIPTION
+;    Decodes URL string
+;
+;  INPUTS
+;     URL string to be decoded.
+; 
+;  OUTPUT
+;     Decoded URL string.
+;   
+;******
+
+    
+(define (url-decode str)
+  (replace "+" str " ") ; optional
+  (replace "%([0-9A-F][0-9A-F])" str (format "%c" (int
+						   (append "0x" $1))) 1))
+
+;****f* xymonnet-zebra/getWxInformation
+;
+;  NAME 
+;    getWxInformation
+;
+;  DESCRIPTION
+;
+;  INPUTS
+;     None
+; 
+;  OUTPUT
+;     Menu executes and an answer is obtained from the user.
+;   
+;  NOTES 
+;     It could be changed to make it more generic.. but it works
+; 
+;******
+
+
+(define (getWxInformation cityname site state warnzone)
+  (set 'request (list (eval 'cityname) 
+		      (eval 'site) 
+		      (eval 'state)
+		      (eval 'warnzone) ))
+
+  (set 'urladdress "http://mobile.weather.gov/port_mp_ns.php/")
+
+;  (set 'urldata (join (list "CityName=" (url-encode cityname )
+;			    "&site=" (url-encode site) 
+;			    "&warnzone=" (url-encode warnzone) )))
+
+  (set 'urldata (join (list "select=3CityName=" (url-encode cityname )
+			    "&site=" (url-encode site) 
+			    "&warnzone=" (url-encode warnzone) )))
+
+  (set 'result (post-url  urladdress urldata ) )
+
+result)
+
+
+;****f* xymonnet-zebra/get-stat
+;
+;  NAME 
+;    get-stat
+;
+;  DESCRIPTION
+;    Gets router statistics for specific 
+;    network interfaces. Right now they are
+;    hard coded for the wifi network and the
+;    ethernet connection. 
+;
+;    It:
+;      * Open socket
+;      * Send password
+;      * Set terminal length to 0, "terminal length 0\n"
+;      * show interface br0
+;      * show interface eth2 (1 to 2)
+;      * exit
+;
+;  INPUTS
+;     None
+; 
+;  OUTPUT
+;     Menu executes and an answer is obtained from the user.
+;   
+;  NOTES 
+;     It could be changed to make it more generic.. but it works
+; 
+;******
+
+
+(define (getTemp buffer)
+  (let ((temperature 0))
+    (dolist (line-item (parse buffer "\n"))
+	    (if (find "Temperature:" line-item)
+		(begin
+		  (setq line-item (replace "&deg\;" line-item " "))
+		  (setq temperature (nth 1 (parse line-item)))
+		  (println temperature) )))
+    temperature))
+
+;****** xymonnet-zebra/main
+;
+;  DESCRIPTION
+;    The following operations are done 
+;    to guide the collection and delivery
+;    of data:
+;    * Gets the statistics from the router.
+;    * Gets the list of input and output bytes.
+;    * Sends the data to Xymon for collection.
+;    
+;   
+;  NOTES 
+;     It could be changed to make it more generic.. but it works
+; 
+;******
+		
+	      
+(if (= TESTNAME "wx")
+    (begin
+
+      (setq buffer (getWxInformation "Piscataway" "PHI" "NJ" "NJZ012"))
+      (setq values (list (list "Piscataway" (getTemp buffer))))
+      (println values)
+
+
+  (dolist (value-item values)
+	  (! (format 
+	      (append "%s %s \"data %s.trends\n[wx.%s.rrd]\n" 
+		      "DS:temperature:GAUGE:600:0:U %d\"\n")
+	   (env "BB")
+	   (env "BBDISP")
+	   MACHINE
+	   (nth 0 value-item) 
+	   (int (nth 1 value-item)) ) )) 
+  ))
+
+(exit 0)
+
+
+;****** xymonnet-zebra/configuration
+;
+;  DESCRIPTION
+;     To configure xymon to show these under
+;     thrends, the following needs to be configured
+;     in $XYMONHOME/etc
+;
+;     graphs.cfg
+; 
+;     Add an entry with the following configuration
+;     parameters for the graph.
+;    
+;[zebranet]
+;        FNPATTERN ^zebranet.(.+).rrd
+;        TITLE Router Traffic Satistics                          
+;        YAXIS Kilobytes
+;        DEF:in@RRDIDX@=@RRDFN@:up:AVERAGE
+;        DEF:out@RRDIDX@=@RRDFN@:down:AVERAGE
+;        LINE1:in@RRDIDX@#@COLOR@:@RRDPARAM@ Input               
+;        GPRINT:in@RRDIDX@:LAST: %6.1lf (cur) \:
+;        GPRINT:in@RRDIDX@:MAX: %6.1lf (max) \:
+;        GPRINT:in@RRDIDX@:MIN: %6.1lf (min) \:
+;        GPRINT:in@RRDIDX@:AVERAGE: %6.1lf (avg)\n
+;        LINE1:out@RRDIDX@#@COLOR@:@RRDPARAM@ Output
+;        GPRINT:out@RRDIDX@:LAST: %6.1lf (cur) \:
+;        GPRINT:out@RRDIDX@:MAX: %6.1lf (max) \:
+;        GPRINT:out@RRDIDX@:MIN: %6.1lf (min) \:
+;        GPRINT:out@RRDIDX@:AVERAGE: %6.1lf (avg)\n
+;   
+;   xymonserver.cfg
+;   At the end of the TEST2RRD and GRAPHS variables add
+;   "zebranet". This will tell xymon to show the zebranet
+;   graphs.
+;
+;   Add this script under the $XYMONHOME/etc for the server and add an a
+;   appropriate entry under $XYMONHOME/tasks.d/ to enable
+;   automated execution of this script.
+;   
+;******
+
+
+
