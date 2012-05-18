@@ -1,0 +1,99 @@
+;;
+;; WX - Gets information from the national weather service
+;;
+#!/opt/bin/env newlisp
+
+(if (= (env "BBHOME") "")
+    (begin
+      (println "BBHOME is not set")
+					;(exit 1)
+    )
+)
+
+(if (= (env "BBRDS") "")
+    (begin
+      (println "BBRDS is not set")
+					;(exit 1)
+    )
+)
+
+(if (not (directory? (env "BBHOME")))
+    (begin
+      (println "BBHOME is invalid")
+      (exit 1)
+      )
+)
+
+(set 'TESTNAME "wx")
+(set 'MACHINE "air")
+
+# go to the logs area for simplication of the list
+
+
+(define (url-encode str) 
+    (replace {([^a-zA-Z0-9])} str (format "%%%2X" (char $1)) 0))
+    
+    
+(define (url-decode str)
+  (replace "+" str " ") ; optional
+  (replace "%([0-9A-F][0-9A-F])" str (format "%c" (int
+						   (append "0x" $1))) 1))
+
+
+(define (getWxInformation cityname site state warnzone)
+  (set 'request (list (eval 'cityname) 
+		      (eval 'site) 
+		      (eval 'state)
+		      (eval 'warnzone) ))
+
+  (set 'urladdress "http://mobile.weather.gov/port_mp_ns.php/")
+;  (set 'urldata (join (list "CityName=" (url-encode cityname )
+;			    "&site=" (url-encode site) 
+;			    "&warnzone=" (url-encode warnzone) )))
+
+  (set 'urldata (join (list "select=3CityName=" (url-encode cityname )
+			    "&site=" (url-encode site) 
+			    "&warnzone=" (url-encode warnzone) )))
+
+  (set 'result (post-url  urladdress urldata ) )
+
+result)
+
+(define (getTemp buffer)
+  (let ((temperature 0))
+    (dolist (line-item (parse buffer "\n"))
+	    (if (find "Temperature:" line-item)
+		(begin
+		  (setq line-item (replace "&deg\;" line-item " "))
+		  (setq temperature (nth 1 (parse line-item)))
+		  (println temperature) )))
+    temperature))
+		
+	      
+(if (= TESTNAME "wx")
+    (begin
+
+      (setq buffer (getWxInformation "Piscataway" "PHI" "NJ" "NJZ012"))
+      (setq values (list (list "Piscataway" (getTemp buffer))))
+      (println values)
+
+#
+# COMPUTE DIFFERENCES
+#
+
+
+
+  (dolist (value-item values)
+	  (println (format 
+	      (append "%s %s \"data %s.trends\n[wx.%s.rrd]\n" 
+		      "DS:temperature:GAUGE:600:0:U %d\"\n")
+	   (env "BB")
+	   (env "BBDISP")
+	   MACHINE
+	   (nth 0 value-item) 
+	   (int (nth 1 value-item)) ) )) 
+  ))
+
+(exit 0)
+
+
