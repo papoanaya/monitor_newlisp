@@ -25,8 +25,8 @@
 )
 
 (set 'TESTNAME "wx")
-(set 'MACHINE "air")
-
+;(set 'MACHINE "air")
+(set 'MACHINE (env "MACHINE"))
 # go to the logs area for simplication of the list
 
 
@@ -84,7 +84,7 @@ result)
 
 
   (dolist (value-item values)
-	  (println (format 
+	  (! (format 
 	      (append "%s %s \"data %s.trends\n[wx.%s.rrd]\n" 
 		      "DS:temperature:GAUGE:600:0:U %d\"\n")
 	   (env "BB")
