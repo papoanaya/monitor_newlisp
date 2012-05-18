@@ -197,7 +197,7 @@ result)
   (dolist (value-item values)
 	  (! (format 
 	      (append "%s %s \"data %s.trends\n[wx.%s.rrd]\n" 
-		      "DS:temperature:GAUGE:600:0:U %d\"\n")
+		      "DS:temperature:GAUGE:600:0:200 %d\"\n")
 	   (env "BB")
 	   (env "BBDISP")
 	   MACHINE

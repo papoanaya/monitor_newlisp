@@ -203,8 +203,8 @@
   (dolist (value-item values)
 	  (! (format 
 	      (append "%s %s \"data %s.trends\n[zebranet.%s.rrd]\n" 
-		      "DS:up:COUNTER:600:0:U %d\n"
-		      "DS:down:COUNTER:600:0:U %d\"")
+		      "DS:up:COUNTER:600:0:1000000 %d\n"
+		      "DS:down:COUNTER:600:0:1000000 %d\"")
 	   (env "BB")
 	   (env "BBDISP")
 	   MACHINE
