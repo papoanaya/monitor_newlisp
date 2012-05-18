@@ -1,5 +1,5 @@
 #!/opt/bin/env newlisp
-;****** monitor_newlisp/xymonnet-temperature
+;****h* monitor_newlisp/xymonnet-temperature
 ;
 ; NAME 
 ;   xymonnet-temperature
@@ -219,19 +219,20 @@ result)
 ; 
 ;     Add an entry with the following configuration
 ;     parameters for the graph.
-;[wx]
-;	FNPATTERN ^wx.(.+).rrd
-;	TITLE Ambient Temperature
-;	YAXIS F
-;	DEF:temperature@RRDIDX@=@RRDFN@:temperature:AVERAGE
-;	LINE1:temperature@RRDIDX@#@COLOR@:@RRDPARAM@ Temperature
-;	GPRINT:temperature@RRDIDX@:LAST: %6.1lf (cur) \:
-;	GPRINT:temperature@RRDIDX@:MAX: %6.1lf (max) \:
-;	GPRINT:temperature@RRDIDX@:MIN: %6.1lf (min) \:
-;	GPRINT:temperature@RRDIDX@:AVERAGE: %6.1lf (avg)\n
+;         [wx]
+;	     FNPATTERN ^wx.(.+).rrd
+;	     TITLE Ambient Temperature
+;	     YAXIS F
+;	     DEF:temperature@RRDIDX@=@RRDFN@:temperature:AVERAGE
+;	     LINE1:temperature@RRDIDX@#@COLOR@:@RRDPARAM@ Temperature
+;	     GPRINT:temperature@RRDIDX@:LAST: %6.1lf (cur) \:
+;	     GPRINT:temperature@RRDIDX@:MAX: %6.1lf (max) \:
+;	     GPRINT:temperature@RRDIDX@:MIN: %6.1lf (min) \:
+;	     GPRINT:temperature@RRDIDX@:AVERAGE: %6.1lf (avg)\n
 ;    
 ;   
 ;   xymonserver.cfg
+;   
 ;   At the end of the TEST2RRD and GRAPHS variables add
 ;   "wx". This will tell xymon to show the zebranet
 ;   graphs.
