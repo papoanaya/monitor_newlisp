@@ -1,6 +1,6 @@
 #!/usr/bin/env newlisp
 
-;****** monitor_newlisp/xymonnet-zebra
+;****h* monitor_newlisp/xymonnet-zebra
 ;
 ; NAME 
 ;   xymonnet-zebra
@@ -98,7 +98,6 @@
    (let (outbuffer "")
      (set 'socket (net-connect "192.168.10.1" 2601))
      (net-receive socket buffer 10000)
- ;    (println buffer)
      (net-send socket "sekret\r\n\r\n")
      (net-receive socket buffer 10000)
      (net-send socket "terminal length 0\r\n\r\n")
@@ -110,7 +109,7 @@
 		   (setq outbuffer (append outbuffer buffer)))
 
      (setq outbuffer (append outbuffer  "\n"))
-;    (write-file "salida.txt"  buffer)
+
      (net-send socket "exit\r\n\r\n")
      (net-close socket)
      outbuffer) )
@@ -232,22 +231,22 @@
 ;     Add an entry with the following configuration
 ;     parameters for the graph.
 ;    
-;[zebranet]
-;        FNPATTERN ^zebranet.(.+).rrd
-;        TITLE Router Traffic Satistics                          
-;        YAXIS Kilobytes
-;        DEF:in@RRDIDX@=@RRDFN@:up:AVERAGE
-;        DEF:out@RRDIDX@=@RRDFN@:down:AVERAGE
-;        LINE1:in@RRDIDX@#@COLOR@:@RRDPARAM@ Input               
-;        GPRINT:in@RRDIDX@:LAST: %6.1lf (cur) \:
-;        GPRINT:in@RRDIDX@:MAX: %6.1lf (max) \:
-;        GPRINT:in@RRDIDX@:MIN: %6.1lf (min) \:
-;        GPRINT:in@RRDIDX@:AVERAGE: %6.1lf (avg)\n
-;        LINE1:out@RRDIDX@#@COLOR@:@RRDPARAM@ Output
-;        GPRINT:out@RRDIDX@:LAST: %6.1lf (cur) \:
-;        GPRINT:out@RRDIDX@:MAX: %6.1lf (max) \:
-;        GPRINT:out@RRDIDX@:MIN: %6.1lf (min) \:
-;        GPRINT:out@RRDIDX@:AVERAGE: %6.1lf (avg)\n
+;          [zebranet]
+;              FNPATTERN ^zebranet.(.+).rrd
+;              TITLE Router Traffic Satistics                          
+;              YAXIS Kilobytes
+;              DEF:in@RRDIDX@=@RRDFN@:up:AVERAGE
+;              DEF:out@RRDIDX@=@RRDFN@:down:AVERAGE
+;              LINE1:in@RRDIDX@#@COLOR@:@RRDPARAM@ Input               
+;              GPRINT:in@RRDIDX@:LAST: %6.1lf (cur) \:
+;              GPRINT:in@RRDIDX@:MAX: %6.1lf (max) \:
+;              GPRINT:in@RRDIDX@:MIN: %6.1lf (min) \:
+;              GPRINT:in@RRDIDX@:AVERAGE: %6.1lf (avg)\n
+;              LINE1:out@RRDIDX@#@COLOR@:@RRDPARAM@ Output
+;              GPRINT:out@RRDIDX@:LAST: %6.1lf (cur) \:
+;              GPRINT:out@RRDIDX@:MAX: %6.1lf (max) \:
+;              GPRINT:out@RRDIDX@:MIN: %6.1lf (min) \:
+;              GPRINT:out@RRDIDX@:AVERAGE: %6.1lf (avg)\n
 ;   
 ;   xymonserver.cfg
 ;   At the end of the TEST2RRD and GRAPHS variables add
