@@ -19,7 +19,7 @@
 ; 
 ;******
 
-;****** dzen_newlisp/configuration
+;****v* dzen_newlisp/configuration
 ; 
 ; DESCRIPTION
 ;    User configurable parameters
@@ -45,8 +45,15 @@
 ;; Main loop interval in seconds
 (define SLEEP-INTERVAL 1)
 
+;; Defines list of mountpoints
+;; and drive suffixes to monitor
+
+(setq suffix-list '("sd"))
+(setq mountpoint-list '("cemnt"))
+
+
 ;******
-;****** dzen_newlisp/signal
+;****c* dzen_newlisp/signal
 ; 
 ; DESCRIPTION
 ;    Signal handling constants
@@ -96,9 +103,38 @@
 (setq *CPU-LOADS* (list 0 0))
 
 
+(set 'dzen-location (exec "which dzen2"))
+
+(if (= dzen-location '())
+    (setq dzen-location "dzen2")
+    (begin
+      (setq dzen-location (first dzen-location))
+      )
+)
+
+
+;****f*
+; 
+; NAME 
+;    get-disk
+;
+; DESCRIPTION
+;    Executes df and gets a list of disk mount
+;    points and available space.
+; 
+; INPUTS 
+;    None
+;
+; OUTPUT
+;   List with df results
+;   
+;   
+;******
+
 (define (get-disk) 
   ;*****
   ; NOTES
+  ;   Remove -P if df does not support it.
   ;
   ; SOURCE 
   (setq df-results (exec "df -P"))
@@ -111,16 +147,35 @@
 	 (rest df-results))
 )
 
+;****f*
+; 
+; NAME 
+;    get-dbar
+;
+; DESCRIPTION
+;    Runs gdbar to get a graphical representation
+;    of a number.
+;    
+; 
+; INPUTS 
+;    None
+;
+; OUTPUT
+;   Graphical representation of a number. 
+;   
+;   
+;******
+
 (define (get-dbar fs per)
    (first (exec  (append "echo " per "| gdbar -l " fs) ))
 )
 
 
 
-(define (get-dbar-results)
+(define (get-dbar-results mountpoint)
   (let ((df-result (get-disk)) )
     (map (fn (x)
-	   (if (not (nil? (find "cemnt" (first x)) ))
+	   (if (not (nil? (find mountpoint  (first x)) ))
 	       (get-dbar (last (parse (first x) "/"))  (nth 1 x)) ))
 df-result))
 )
@@ -199,13 +254,21 @@ df-result))
 
   (map set '(myin bcout) (pipe))
   (map set '(bcin myout) (pipe))
-  (setq pid (process "/opt/home/papo/bin/dzen2 -bg \#0C0C0C  -p -ta r -e 'onstart=lower\;button3=exit' " bcin 0))
+
+  (setq dzen-process (format "%s -bg %s -p -ta r -e 'onstart=lower\;button3=exit'"
+			    dzen-location
+			    *BACKGROUND-COLOR*))
+
+
+  (setq pid (process dzen-process bcin 0))
 
   (while (not nil)
-	 (map (fn (x)
-		    (if (not (nil? (find "sd" x)))
-			(write myout (format "%s " x))) )
-	   (get-dbar-results))
+	 (dolist (mountpoint mountpoint-list)
+		 (map (fn (x)
+			(if (not (nil? (find "sd" x)))
+			    (write myout (format "%s " x))) )
+		      (get-dbar-results mountpoint)) )
+	 
 	 (write myout SEPARATOR)
 	 (write myout " ")
 	 (write myout (get-mem-dbar-results))
@@ -214,9 +277,7 @@ df-result))
 	 (write-line myout)
 	 (sleep 10000)
 	 (if (not (process_exists (string pid)) )
-	     (throw 0))
-	 
-	 )
+	     (throw 0)))
   (destroy pid)
 )
 
