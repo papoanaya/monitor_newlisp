@@ -8,8 +8,13 @@ that do not take a lot of  resources.
 
 This includes:
 
-* DZen Monitoring Scripts
-* Xymon/BigBrother/Hobbit Monitoring Scripts
+* bb-base: Set of xymon base scripts in newlisp.
+* bb-mysql: Set of xymon mysql monitoring scripts in newlisp.
+* bb-wx: Newlisp script that collects data from the National Weather 
+Service for xymon.
+* bb-zebra: Newlisp script to collect data from a trendnet router.
+* dzen2: Newlisp script to work with dzen2.
+* misc: Miscellaneous scripts used for monitoring systems. 
 
 Known Issues
 ------------
@@ -24,5 +29,6 @@ More bugs than a wasp's nest.
 Installation
 ------------
 
-TBD Scripts need to be productize and made more generic. 
-Until then, no installation intructions will be provided.
+Installation is described in each individual directory
+see each of them for details.
+
