@@ -50,7 +50,7 @@ Installation
 	         GPRINT:temperature@RRDIDX@:AVERAGE: %6.1lf (avg)\n
    
 4.  At the end of the TEST2RRD and GRAPHS variables add
-    "wx". This will tell xymon to show the zebranet
+    "wx". This will tell xymon to show the wx
     graphs.
 
 5.  Add this script under the $XYMONHOME/etc for the server and add an a
