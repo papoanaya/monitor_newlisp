@@ -220,7 +220,7 @@ result)
 ;     Add an entry with the following configuration
 ;     parameters for the graph.
 ;         [wx]
-p;	     FNPATTERN ^wx.(.+).rrd
+;	     FNPATTERN ^wx.(.+).rrd
 ;	     TITLE Ambient Temperature
 ;	     YAXIS F
 ;	     DEF:temperature@RRDIDX@=@RRDFN@:temperature:AVERAGE
