@@ -32,3 +32,9 @@ Installation
 Installation is described in each individual directory
 see each of them for details.
 
+License
+-------
+This code has been developed under the terms and conditions of the 
+GNU Public License version 3.0 as described in the license file (LICENSE) 
+included in the distribution.  Even though this software is harboring itself
+under this license, it is in no part of the Gnu software offerings. 
