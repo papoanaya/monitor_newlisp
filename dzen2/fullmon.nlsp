@@ -32,7 +32,7 @@
 
 ;; Appareance
 ;;(define FONT "'-*-profont-*-*-*-*-11-*-*-*-*-*-iso8859'")
-(define BACKGROUND-COLOR "'#2c2c32'")
+(define BACKGROUND-COLOR "\#2c2c32")
 (define ALTERNATE-BACKGROUND-COLOR "'#494b4f'")
 (define FOREGROUND-COLOR "'grey70'")
 (define SEPARATOR "^p(3)^r(3x3)^p(3)")
@@ -138,7 +138,7 @@
   ;   Remove -P if df does not support it.
   ;
   ; SOURCE 
-  (setq df-results (exec "df -P"))
+  (setq df-results (exec "df -P "))
   ;******
 
   (map (fn (x)
@@ -218,7 +218,15 @@
 
 
 (define (get-free) 
+  ;******
+  ; NOTES 
+  ;   free must have -t available. 
+  ; 
+  ; SOURCE
+  ; 
   (setq free-results (exec "free -t"))
+  ;
+  ;******
   (parse (last free-results))
  )
 
@@ -340,7 +348,7 @@
 
   (setq dzen-process (format "%s -bg %s -p -ta r -e 'onstart=lower\;button3=exit'"
 			    dzen-location
-			    *BACKGROUND-COLOR*))
+			    BACKGROUND-COLOR))
 
 
   (setq pid (process dzen-process bcin 0))
