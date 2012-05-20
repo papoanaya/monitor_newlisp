@@ -7,3 +7,13 @@ Motivation
 
 Needed to have a basic squeleton sample for big brother monitoring to
 keep around when I needed to create new monitoring scripts.
+
+Installation
+------------
+
+None, these are sample scripts and only useful for developers
+that are familiar with xymon, hobbit or big brother, and
+newlisp.  If you are not a developer, these do have
+limited value. In code documentation explains what each of
+the code components do. 
+
