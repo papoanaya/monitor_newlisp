@@ -193,7 +193,7 @@
       (setq values (get-statistic-list buffer))
 
       (dolist (value-item values)
-	  (println (format 
+	  (! (format 
 	      (append "%s %s \"data %s.trends\n[lighttpd.%s.rrd]\n" 
 		      "DS:%s:%s:600:0:10000 %d\"\n")
 	      (env "BB")
