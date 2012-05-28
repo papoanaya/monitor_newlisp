@@ -42,14 +42,6 @@
 
 # SELECT SOME LEVELS... GREEN IS THE DEFAULT...
 
-;declare -i MYSQL_UPTIME
-;declare -i MYSQL_THREADS
-;declare -i MYSQL_SLOWQ
-;declare -i MYSQL_QPS
-;declare -i MYSQL_OLDUPTIME
-;declare -i MYSQL_OLDSLOWQ
-;declare -i MYSQL_DSLOWQ
-
 #
 # GET CURRENT VALUES
 #
