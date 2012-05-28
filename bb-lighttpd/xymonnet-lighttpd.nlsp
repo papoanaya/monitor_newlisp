@@ -192,10 +192,10 @@
       (setq buffer (get-lighttpd URL ))
       (setq values (get-statistic-list buffer))
 
-      (dolist (value-item (slice values 0 2))
+      (dolist (value-item values)
 	  (println (format 
-	      (append "%s %s \"data %s.trends\n[light.%s.rrd]\n" 
-		      "DS:%s:%s:600:0:200 %d\"\n")
+	      (append "%s %s \"data %s.trends\n[lighttpd.%s.rrd]\n" 
+		      "DS:%s:%s:600:0:10000 %d\"\n")
 	      (env "BB")
 	      (env "BBDISP")
 	      MACHINE

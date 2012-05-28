@@ -7,7 +7,7 @@ Collects data from lighttpd.
 
 Scripts
 -------
-* xymonnet-lihttpd.nlsp - Temperature for a given territory
+* xymonnet-lihttpd.nlsp - Lighttpd
 
 Installation
 ------------
