@@ -194,7 +194,7 @@
               (setq value "OK"))
 
         )
-  (list color value ts_value ))
+  (list color value ratio ))
 
 ;****** xymonnet-temperature/main
 ;
