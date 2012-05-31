@@ -1,4 +1,4 @@
-#!/opt/bin/env newlisp
+#!/opt/home/papo/bin/newlisp
 ;****h* monitor_newlisp/xymonnet-temperature
 ;
 ; NAME 
@@ -50,7 +50,9 @@
 (set 'TESTNAME "lighttpd")
 (set 'MACHINE (env "MACHINE"))
 (set 'URL "http://192.168.10.6:8000/server-status?auto")
-
+(constant 'GREEN "green")
+(constant 'RED "red")
+(constant 'YELLOW "yellow")
 ;*****
 
 
@@ -168,6 +170,32 @@
 )
 
 
+
+(define (analyze-data values)
+  (dolist (value-items values)
+
+          (cond 
+           ( (=  (first value-items) "IS" ) 
+             (setq is_value (int (nth 1 value-items) ) ) )
+           ( (=  (first value-items) "BS" ) 
+             (setq bs_value (int (nth 1 value-items) ) ) ) )
+          )
+
+  (setq ts_value (+ is_value bs_value))
+
+  (setq ratio (div bs_value ts_value))
+  (cond ( (>   ratio .90)
+          (setq color RED) 
+          (setq value "CRITICAL"))
+        ( (and (> ratio .75 ) (< ratio .90))
+          (setq color YELLOW) 
+          (setq value "BUSY"))
+        (true (setq color GREEN)
+              (setq value "OK"))
+
+        )
+  (list color value ts_value ))
+
 ;****** xymonnet-temperature/main
 ;
 ;  DESCRIPTION
@@ -191,19 +219,46 @@
 
       (setq buffer (get-lighttpd URL ))
       (setq values (get-statistic-list buffer))
-
+      (setq results (analyze-data values))
       (dolist (value-item values)
-	  (! (format 
-	      (append "%s %s \"data %s.trends\n[lighttpd.%s.rrd]\n" 
-		      "DS:%s:%s:600:0:10000 %d\"\n")
-	      (env "BB")
-	      (env "BBDISP")
-	      MACHINE
-	      (nth 0 value-item) 
-	      (nth 2 value-item)
-	      (nth 3 value-item) 
-	      (int (nth 1 value-item))) )) 
-  ))
+              (if (= "GAUGE" (nth 3 value-item))
+                  (! (format 
+                      (append "%s %s \"data %s.trends\n[lighttpd.%s.rrd]\n" 
+                              "DS:%s:%s:600:0:10000 %d\"\n")
+                      (env "BB")
+                      (env "BBDISP")
+                      MACHINE
+                      (nth 0 value-item) 
+                      (nth 2 value-item)
+                      (nth 3 value-item) 
+                      (int (nth 1 value-item))) )
+
+                  (! (format 
+                      (append "%s %s \"data %s.trends\n[%s.lighttpd.rrd]\n" 
+                              "DS:%s:%s:600:0:10000 %d\"\n")
+                      (env "BB")
+                      (env "BBDISP")
+                      MACHINE
+                      (nth 2 value-item) 
+                      (nth 2 value-item)
+                      (nth 3 value-item) 
+                      (int (nth 1 value-item))) ) 
+                  )) 
+
+
+      (! (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
+                       (env "BB")
+                       (env "BBDISP")
+                       (env "MACHINE")
+                       TESTNAME
+                       (nth 1 results)
+                       (date)
+                       (nth 0 results)
+                       (append "Ratio: " (string (nth 2 results)))))
+
+      )
+
+    )
 
 (exit 0)
 
@@ -211,35 +266,22 @@
 ;****** xymonnet-temperature/configuration
 ;
 ;  DESCRIPTION
-;     To configure xymon to show these under
-;     thrends, the following needs to be configured
-;     in $XYMONHOME/etc
+;    To configure xymon to show these under
+;    trends, the following needs to be configured
+;    in $XYMONHOME/etc
 ;
-;     graphs.cfg
+;    graphs.cfg
 ; 
-;     Add an entry with the following configuration
-;     parameters for the graph.
-;         [wx]
-;	     FNPATTERN ^wx.(.+).rrd
-;	     TITLE Ambient Temperature
-;	     YAXIS F
-;	     DEF:temperature@RRDIDX@=@RRDFN@:temperature:AVERAGE
-;	     LINE1:temperature@RRDIDX@#@COLOR@:@RRDPARAM@ Temperature
-;	     GPRINT:temperature@RRDIDX@:LAST: %6.1lf (cur) \:
-;	     GPRINT:temperature@RRDIDX@:MAX: %6.1lf (max) \:
-;	     GPRINT:temperature@RRDIDX@:MIN: %6.1lf (min) \:
-;	     GPRINT:temperature@RRDIDX@:AVERAGE: %6.1lf (avg)\n
-;    
-;   
-;   xymonserver.cfg
-;   
-;   At the end of the TEST2RRD and GRAPHS variables add
-;   "wx". This will tell xymon to show the zebranet
-;   graphs.
+;    Add an entry with the following configuration
+;    parameters for the graph.
+;     
 ;
-;   Add this script under the $XYMONHOME/etc for the server and add an a
-;   appropriate entry under $XYMONHOME/tasks.d/ to enable
-;   automated execution of this script.
+;   
+;    xymonserver.cfg
+;   
+;    Add this script under the $XYMONHOME/etc for the server and add an a
+;    appropriate entry under $XYMONHOME/tasks.d/ to enable
+;    automated execution of this script.
 ;   
 ;******
 
