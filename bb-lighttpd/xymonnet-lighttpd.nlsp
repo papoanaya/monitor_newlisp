@@ -251,9 +251,9 @@
                        (env "BBDISP")
                        (env "MACHINE")
                        TESTNAME
-                       (nth 1 results)
-                       (date)
                        (nth 0 results)
+                       (date)
+                       (nth 1 results)
                        (append "Ratio: " (string (nth 2 results)))))
 
       )
