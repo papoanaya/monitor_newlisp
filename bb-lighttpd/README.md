@@ -13,8 +13,7 @@ Installation
 ------------
 
 1.  To configure xymon to show these under
-    thrends, the following files need to be configured
-    in $XYMONHOME/etc:
+    thrends, the following files need to be configured:
     * graphs.cfg
     * clientlaunch.cfg
     * hosts.cfg
