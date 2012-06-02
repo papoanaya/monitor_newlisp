@@ -17,6 +17,7 @@ Installation
     * graphs.cfg
     * clientlaunch.cfg
     * hosts.cfg
+    * xymonserver.cfg
     
 2.  This script can run on the server or
     client being that it pulls data from 
@@ -73,7 +74,12 @@ Installation
     hosts.cfg 
      
     Add "lighttpd" to the server to be monitored
+
+    xymonserver.cfg
     
+    At the end of the TEST2RRD and GRAPHS variables add
+    "lighttpd". This will tell xymon to show the graphs.
+
 4.  Client:
     
     clientlaunch.cfg
