@@ -1,12 +1,12 @@
 #!/opt/home/papo/bin/newlisp
-;****h* monitor_newlisp/xymonnet-temperature
+;****h* monitor_newlisp/xymonnet-lighttpd
 ;
 ; NAME 
-;   xymonnet-temperature
+;   xymonnet-lighttpd
 ; 
 ; SYNOPSIS 
-;    Gets temperature information from the National Weather Service
-;    site and sends them into a RRD database in xymon. 
+;    Gets information from lighttpd servers by reading
+;    data from /server-status
 ;    
 ; AUTHOR 
 ;    Luis R. Anaya
@@ -38,11 +38,11 @@
       )
 )
 
-;****** xymonnet-temperature/machine-id
+;****** xymonnet-lighttpd/machine-id
 ; NOTES
-;   Being that this is a pull script, machine id may need
-;   to be hard coded. Right now is getting the machine name
-;   from the xymon environment. 
+;   The following needs to be configured:
+;   * URL - URL of the server running lighttpd
+;   
 ;
 ; SOURCE
 
@@ -56,7 +56,7 @@
 ;*****
 
 
-;****f* xymonnet-temperature/url-encode
+;****f* xymonnet-lighttpd/url-encode
 ;
 ;  NAME 
 ;    url-encode
@@ -76,7 +76,7 @@
 (define (url-encode str) 
     (replace {([^a-zA-Z0-9])} str (format "%%%2X" (char $1)) 0))
     
-;****f* xymonnet-temperature/url-decode
+;****f* xymonnet-lighttpd/url-decode
 ;
 ;  NAME 
 ;    url-decode
@@ -98,16 +98,19 @@
   (replace "%([0-9A-F][0-9A-F])" str (format "%c" (int
 						   (append "0x" $1))) 1))
 
-;****f* xymonnet-temperature/getWxInformation
+;****f* xymonnet-lighttpd/get-lighttpd
 ;
 ;  NAME 
 ;    get-lighttpd
 ;
 ;  DESCRIPTION
+;    Obtains status information from lighttpd.
 ;   
 ;  INPUTS
+;    Server URL, defined at start. 
 ; 
 ;  OUTPUT
+;    Buffer with usage statistics.
 ;   
 ;  NOTES 
 ; 
@@ -122,20 +125,23 @@
   result)
 
 
-;****f* xymonnet-temperature/getTemp
+;****f* xymonnet-lighttpd/get-statistics-list
 ;
 ;  NAME 
-;    getTemp
+;    get-statistics-list
 ;
 ;  DESCRIPTION
-;    Gets the temperature information in Farenheith 
-;    from the results from a getWxInformationCall
+;    Parses data from get-lighttpd and 
+;    creates a list with tag, values and
+;    RRD graph creation information.
+;    
 ;  
 ;  INPUTS
-;     Buffer from the getWxInformation Call
+;     Buffer from get-lighttpd
 ; 
 ;  OUTPUT
-;     Temperature on the location in Farenheith
+;     List of data items with identification.
+;     ( "ID" "Value" "RRD variable name" "RRD Variable Type")
 ; 
 ;******
 
@@ -170,6 +176,30 @@
 )
 
 
+;****f* xymonnet-lighttpd/get-statistics-list
+;
+;  NAME 
+;    analyze-data
+;
+;  DESCRIPTION
+;    Gets the list of returned statistics
+;    and determines if the server is running
+;    in GREEN, YELLOW or in RED by taking the 
+;    ratio of total servers vs.  the ones that
+;    are busy.  Currently these are defined as:
+;    * Green: less than .75 
+;    * Yellow: between .75 and .90
+;    * Red: > .90
+;    
+;  INPUTS
+;     List of data items as returned from get-statistics-list
+; 
+;  OUTPUT
+;     List containing the server status.
+;     ( "color" "status" "ratio")
+; 
+;******
+
 
 (define (analyze-data values)
   (dolist (value-items values)
@@ -196,20 +226,20 @@
         )
   (list color value ratio ))
 
-;****** xymonnet-temperature/main
+;****** xymonnet-lighttpd/main
 ;
 ;  DESCRIPTION
 ;    The following operations are done 
 ;    to guide the collection and delivery
 ;    of data:
-;    * Gets the statistics from NWS.
-;    * Creates a list with the city and temperature
-;    * Sends the data to Xymon for collection.
-;    
+;    * Gets the statistics from lighttpd server
+;    * Creates a list with statistics.
+;    * Creates a list with status information.
+;    * Sends the data to Xymon for RRD collection.
+;    * Sends the data to Xymon to display system 
+;      status. 
 ;   
 ;  NOTES 
-;     City is hard coded, but I'll leave structure as it is
-;     for future development.
 ; 
 ;******
 		
@@ -263,9 +293,17 @@
 (exit 0)
 
 
-;****** xymonnet-temperature/configuration
+;****** xymonnet-lighttpd/configuration
 ;
 ;  DESCRIPTION
+;    This script can run on the server or
+;    client being that it pulls data from 
+;    the http server. Currently coded as a
+;    client, but converting it to be a server
+;    script should not be hard. 
+;    
+;    Server:
+;    
 ;    To configure xymon to show these under
 ;    trends, the following needs to be configured
 ;    in $XYMONHOME/etc
@@ -274,13 +312,52 @@
 ; 
 ;    Add an entry with the following configuration
 ;    parameters for the graph.
-;     
+;    
+;        [lighttpd]
+; 	         TITLE Workers Statistics
+; 	         YAXIS Count
+; 	         DEF:busy=lighttpd.BS.rrd:busy:AVERAGE
+; 	         DEF:idle=lighttpd.IS.rrd:idle:AVERAGE
+; 	         LINE2:busy#0000FF:Busy Workers
+; 	         GPRINT:busy:LAST: %6.1lf (cur) \:
+; 	         GPRINT:busy:MAX: %6.1lf (max) \:
+; 	         GPRINT:busy:MIN: %6.1lf (min) \:
+; 	         GPRINT:busy:AVERAGE: %6.1lf (avg)\n
+; 	         LINE2:idle#FF0000:Idle Workers
+; 	         GPRINT:idle:LAST: %6.1lf (cur) \:
+; 	         GPRINT:idle:MAX: %6.1lf (max) \:
+; 	         GPRINT:idle:MIN: %6.1lf (min) \:
+; 	         GPRINT:idle:AVERAGE: %6.1lf (avg)\n
 ;
+;       [kbhttpd]
+; 	         TITLE Kilobytes Served
+; 	         YAXIS Kilobytes
+; 	         DEF:kb=kbytes.lighttpd.rrd:kbytes:AVERAGE
+; 	         LINE2:kb#0000FF:Kilobytes
+; 	         GPRINT:kb:LAST: %6.1lf (cur) \:
+; 	         GPRINT:kb:MAX: %6.1lf (max) \:
+; 	         GPRINT:kb:MIN: %6.1lf (min) \:
+; 	         GPRINT:kb:AVERAGE: %6.1lf (avg)\n
+;       [achttpd]
+; 	         TITLE Total Access
+; 	         YAXIS Count
+; 	         DEF:access=access.lighttpd.rrd:access:AVERAGE
+; 	         LINE2:access#0000FF:Access
+; 	         GPRINT:access:LAST: %6.1lf (cur) \:
+; 	         GPRINT:access:MAX: %6.1lf (max) \:
+; 	         GPRINT:access:MIN: %6.1lf (min) \:
+; 	         GPRINT:access:AVERAGE: %6.1lf (avg)\n 
+;    
+;    hosts.cfg 
+;     
+;    Add "lighttpd" to the server to be monitored
+;    
+;    Client:
+;    
+;    clientlaunch.cfg
 ;   
-;    xymonserver.cfg
-;   
-;    Add this script under the $XYMONHOME/etc for the server and add an a
-;    appropriate entry under $XYMONHOME/tasks.d/ to enable
+;    Add this script under the $XYMONCLIENTHOME/ext for the server and add an a
+;    appropriate entry under $XYMONCLIENTHOME/clientlaunch to enable
 ;    automated execution of this script.
 ;   
 ;******
