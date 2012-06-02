@@ -176,7 +176,7 @@
 )
 
 
-;****f* xymonnet-lighttpd/get-statistics-list
+;****f* xymonnet-lighttpd/anallyze-data
 ;
 ;  NAME 
 ;    analyze-data
@@ -361,6 +361,3 @@
 ;    automated execution of this script.
 ;   
 ;******
-
-
-
