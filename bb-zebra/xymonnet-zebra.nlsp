@@ -56,7 +56,7 @@
 
 (set 'TESTNAME "zebranet")
 (set 'MACHINE "router")
-
+(set 'RTIP "192.168.10.1")
 ;****
 
 # go to the logs area for simplication of the list
@@ -95,7 +95,7 @@
   (write-file 
    (append (env "BBTMP") "/" MACHINE ".zebra.out")
    (let (outbuffer "")
-     (set 'socket (net-connect "192.168.10.1" 2601))
+     (set 'socket (net-connect RTIP 2601))
      (net-receive socket buffer 10000)
      (net-send socket "sekret\r\n\r\n")
      (net-receive socket buffer 10000)
