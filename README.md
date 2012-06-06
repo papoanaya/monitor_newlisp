@@ -13,6 +13,8 @@ This includes:
 * bb-wx: Newlisp script that collects data from the National Weather 
 Service for xymon.
 * bb-zebra: Newlisp script to collect data from a trendnet router.
+* bb-lighttp: Newlisp script to collect data from lighttpd using the
+  server-status address. 
 * dzen2: Newlisp script to work with dzen2.
 * misc: Miscellaneous scripts used for monitoring systems. 
 
