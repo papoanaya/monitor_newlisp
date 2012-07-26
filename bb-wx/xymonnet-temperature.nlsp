@@ -123,17 +123,14 @@
 ;******
 
 
-(define (getWxInformation cityname site state warnzone)
-  (set 'request (list (eval 'cityname) 
-		      (eval 'site) 
-		      (eval 'state)
-		      (eval 'warnzone) ))
+(define (getWxInformation zipcode)
+  (set 'request (list 
+		      (eval 'zipcode) ))
 
-  (set 'urladdress "http://mobile.weather.gov/port_mp_ns.php/")
+  (set 'urladdress "http://m.wund.com/cgi-bin/findweather/getForecast?")
 
-  (set 'urldata (join (list "select=3CityName=" (url-encode cityname )
-			    "&site=" (url-encode site) 
-			    "&warnzone=" (url-encode warnzone) )))
+  (set 'urldata (join (list "brand=" (url-encode "mobile")
+			    "&query=" (url-encode zipcode))))
 
   (set 'result (post-url  urladdress urldata ) )
 
@@ -159,13 +156,24 @@ result)
 
 
 (define (getTemp buffer)
-  (let ((temperature 0))
+  (let ((temperature 0)
+        (get-next 0))
     (dolist (line-item (parse buffer "\n"))
-	    (if (find "Temperature:" line-item)
-		(begin
-		  (setq line-item (replace "&deg\;" line-item " "))
-		  (setq temperature (nth 1 (parse line-item)))
-		  (println temperature) )))
+            (cond  
+             ((find "<td>Temperature</td>" line-item)
+              (setq get-next 2))
+
+             ((> get-next 1) (setq get-next (- get-next 1)))
+
+             ((= get-next 1)
+              (begin
+                (setq get-next 0)
+                (setq line-item (replace "&deg\;" line-item " "))
+                (setq line-item (replace "<b>" line-item "|"))
+                (setq line-item (replace "</b>" line-item "|"))
+                (setq temperature (nth 1 (parse line-item "|") ))
+                (println temperature)))
+            ))
     temperature))
 
 ;****** xymonnet-temperature/main
@@ -189,9 +197,9 @@ result)
 (if (= TESTNAME "wx")
     (begin
 
-      (setq buffer (getWxInformation "Piscataway" "PHI" "NJ" "NJZ012"))
+      (setq buffer (getWxInformation "08854"))
       (setq values (list (list "Piscataway" (getTemp buffer))))
-      (println values)
+;      (println values)
 
 
   (dolist (value-item values)
