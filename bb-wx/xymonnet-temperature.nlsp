@@ -107,19 +107,11 @@
 ;    impact on the network. 
 ;   
 ;  INPUTS
-;     cityname - City Name
-;     site - NWS Site
-;     state - State or territory
-;     warnzone - Warn advisory zone
-; 
+;     zipcode - Zip Code
+;
 ;  OUTPUT
 ;     Retrieves current weather information
 ;   
-;  NOTES 
-;     To obtain the 4 parameter values, go to mobile.weather.gov
-;     Select your zipcode and get the weather information. The values
-;     will be printed on the top of the URL string in your browser.
-; 
 ;******
 
 
