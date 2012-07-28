@@ -1,0 +1,264 @@
+; Calendar with Emacs org-mode agenda for  DZen2
+; Inspired by and contributed from the org-awesome module, copyright of Damien Leone 
+; and Alexander Yakushev 
+; Licensed under GPLv2
+; @author Luis R. Anaya
+
+(context 'orglendar)
+
+(set 'files '())
+(set 'char-width nil)
+(set 'text_color  "#FFFFFF")
+(set 'today_color  "#00FF00")
+(set 'event_color  "#FF0000")
+(set 'font  'monospace 8')
+(set 'parse_on_show true)
+(set 'calendar_width  21)
+(set 'limit_todo_length  nil)
+
+(set calendar nil)
+(set todo nil)
+(set offset 0)
+(set data nil)
+
+
+(define (pop_spaces s1,s2,maxsize)
+  (let ((sps ""))
+    (for (i 1 (- maxsize (length s1) (length s2)))
+	 (begin 
+	   (set 'sps (append sps " "))))
+    (append s1 sps s2)))
+
+
+(define (parse_agenda)
+  (let ((today (date (date-value) 0 "%Y-%m-%d"))
+	(task_name "")
+	(tasks '())
+	(dates '())
+	(maxlen 20))
+    (setq data (list tasks dates maxlen))
+   ; what is files?
+    (dolist (file files)
+
+      (set 'fd (open file "r"))
+      (if (nil? fd)
+	  (println (format "W: orglendar: cannot find  %s" file))
+	  (begin
+	    (while (setq line (read-line fd))
+		    (setq scheduled (find "SCHEDULED:" line))
+		    (setq closed (find "CLOSED:" line))
+		    (setq deadline (find "DEADLINE" line))
+		    (if (or (and scheduled (not closed))
+			    (and deadline (not closed)))
+			(begin
+			   (setq re (regex "(\d\d\d\d)-(\d\d)-(\d\d)"))
+			   (setq y $0)
+			   (setq m $1)
+			   (setq y $2)
+			   (setq task_date (append y "-" m "-" d))
+
+			   (if (and d task_name (>= task_date today))
+			       (let ((find_begin "")
+				     (task_start (find "[A-Z]+\s+" task_name))
+
+				     (if (and task_start  (= find_begin 1))
+					 (setq task_name (slice task_name, task_start+1)))
+
+				     (setq tasks (find "\s+(:.+):" task_name))
+				     (setq task_end $0)
+				     (setq task_tags $2)
+
+				     (if task_tags 
+					 (setq task_name (slice task_name 1 (- task_end 1)))
+					 (setq task_tags " "))
+  
+				     (setq len (+ (length task_name) (length task_tags)))
+				     
+				     ; Adjust Max Length (position 2 of the list)
+
+				     (if (and (> len (nth 2 data))
+					      (>= task_date today))
+					 (setq (nth 2 data) len))
+				     
+				     ; Push items to the tasks list, on the first of the data.
+
+				     (push (list task_name tags task-date) (nth 0 data))
+				     (push (cons (list y (int m) (int d)) true) (nth 1 data)) )))
+			   )
+					 
+			(setq task_name (find "%*+%s+(.+)" line))) )) )) )
+)
+
+;   table.sort(data.tasks, function (a, b) return a.date < b.date end)
+
+
+
+(define (create_calendar)
+  (let ((offset (or offset 0))
+	(right-now (date (date-value) 0 "*t"))
+	(cal_month (now)); get month
+					;   local cal_month = now.month + offset
+	(cal_year (now)); get year
+					;local cal_year = now.year
+
+	(cond 
+	 ((> cal_month 12)
+	  (setq cal_month (mod cal_month 12))
+	  (setq cal_year (+ cal_year 1)))
+	 ((<cal_month 1)
+	  (setq cal_month (+ cal_month 12))
+	  (setq cal_year (- cal_year 1))) )
+
+	(setq cal_output (first (exec (format "cal -m %s %s"
+					      cal_month
+					      cal_year ))))
+					      
+
+	(setq last_day (find cal_output ".*(%d%d)"))
+ 
+	(setq last_date (int last_day))
+	(setq first_day (list 1 cal_month cal_year))
+
+	(setq first_day_in_seek (date first_day "%w"))
+
+	(setq result "Su Mo Tu We Th Fr Sa\n")
+	
+	(for (i i first_day_in_week)
+	     (setq result (append result "   ")))
+
+	(setq this_month nil)
+	(for (day 1 last_day)
+	     (let ((last_in_week (= (mod (+ day first_day_in_week) 7) 0))
+		   (day_str (append (pop_spaces "", day, 2) (and last_in_week (or "" " ")))))
+
+
+	       (cond
+		((and (= cal_month now.month)
+		      (= cal_year now.year)
+		      (= day  now.day))
+		 (begin
+		   (setq this_month nil)
+		   (setq result (append result 
+					today_color day_str)) )) ;needs to be made bold 
+
+		 ((find-all (append cal_year cal_month day)
+			    (nth 1 data))
+		  (setq result (append result 
+				       event_color day_str)) ) ;needs to be made bold 
+
+		 (true
+		  (setq result (append result day_str))))
+
+  
+
+	       (if (and last_in_week 
+			(regex day last_day))
+		   (setq result (append result "\n"))))) 
+
+	(setq header "")
+
+	(if this_month 
+	    (setq header (date (date-value) 0 "%a, %d %b %Y"))
+	    (setq header (date first_date 0 "%B %Y")))
+	
+	    
+	(append header font text_color result))))
+ 
+
+local function create_todo()
+   local result = ""
+   local maxlen = data.maxlen + 3
+   if limit_todo_length and limit_todo_length < maxlen then
+      maxlen = limit_todo_length
+   end
+   local prev_date, limit, tname
+   for i, task in ipairs(data.tasks) do
+      if prev_date ~= task.date then
+         result = result ..
+            string.format('<span weight = "bold" foreground = "%s">%s</span>\n',
+                          event_color,
+                          pop_spaces("", task.date, maxlen))
+      end
+      tname = task.name
+      limit = maxlen - string.len(task.tags) - 3
+      if limit < string.len(tname) then
+         tname = string.sub(tname, 1, limit - 3) .. "..."
+      end
+      result = result .. pop_spaces(tname, task.tags, maxlen)
+
+      if i ~= table.getn(data.tasks) then
+         result = result .. "\n"
+      end
+      prev_date = task.date
+   end
+   if result == "" then
+      result = " "
+   end
+   return string.format('<span font="%s" foreground="%s">%s</span>',
+                        font, text_color, result), data.maxlen + 3
+end
+
+function get_calendar_and_todo_text(_offset)
+   if not data or parse_on_show then
+      parse_agenda()
+   end
+
+   offset = _offset
+   local header, cal = create_calendar()
+   return string.format('<span font="%s" foreground="%s">%s</span>\n%s',
+                        font, text_color, header, cal), create_todo()
+end
+
+local function calculate_char_width()
+   return theme.get_font_height(font) * 0.555
+end
+
+function hide()
+   if calendar ~= nil then
+      naughty.destroy(calendar)
+      naughty.destroy(todo)
+      calendar = nil
+      offset = 0
+   end
+end
+
+function show(inc_offset)
+   inc_offset = inc_offset or 0
+
+   if not data or parse_on_show then
+      parse_agenda()
+   end
+
+   local save_offset = offset
+   hide()
+   offset = save_offset + inc_offset
+
+   local char_width = char_width or calculate_char_width()
+   local header, cal_text = create_calendar()
+   calendar = naughty.notify({ title = header,
+                               text = cal_text,
+                               timeout = 0, hover_timeout = 0.5,
+                               width = calendar_width * char_width,
+                            })
+   todo = naughty.notify({ title = "TO-DO list",
+                           text = create_todo(),
+                           timeout = 0, hover_timeout = 0.5,
+                           width = (data.maxlen + 3) * char_width,
+                        })
+end
+
+function register(widget)
+   widget:connect_signal("mouse::enter", function() show(0) end)
+   widget:connect_signal("mouse::leave", hide)
+   widget:buttons(util.table.join( awful.button({ }, 3, function()
+                                                           parse_agenda()
+                                                        end),
+                                   awful.button({ }, 4, function()
+                                                           show(-1)
+                                                        end),
+                                   awful.button({ }, 5, function()
+                                                           show(1)
+                                                        end)))
+end
+
+(context MAIN)
