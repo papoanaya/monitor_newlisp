@@ -10,8 +10,7 @@ This includes:
 
 * bb-base: Set of xymon base scripts in newlisp.
 * bb-mysql: Set of xymon mysql monitoring scripts in newlisp.
-* bb-wx: Newlisp script that collects data from the National Weather 
-Service for xymon.
+* bb-wx: Newlisp script that collects data from Weather Underground.
 * bb-zebra: Newlisp script to collect data from a trendnet router.
 * bb-lighttp: Newlisp script to collect data from lighttpd using the
   server-status address. 
