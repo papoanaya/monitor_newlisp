@@ -164,7 +164,7 @@ result)
                 (setq line-item (replace "<b>" line-item "|"))
                 (setq line-item (replace "</b>" line-item "|"))
                 (setq temperature (nth 1 (parse line-item "|") ))
-                (println temperature)))
+                ))
             ))
     temperature))
 
@@ -191,8 +191,6 @@ result)
 
       (setq buffer (getWxInformation "08854"))
       (setq values (list (list "Piscataway" (getTemp buffer))))
-;      (println values)
-
 
   (dolist (value-item values)
 	  (! (format 
