@@ -23,16 +23,12 @@
 #
 
 (if (= (env "BBHOME") "")
-    (println "BBHOME is not set... exiting")
-;    (exit 1)
-)
+    (println "BBHOME is not set... exiting"))
 
 
 
 (if (= (env "BBTMP") "")
-    (println "BBTMP is not set... exiting")
-;    (exit 1)
-)
+    (println "BBTMP is not set... exiting"))
 
 
 #
@@ -51,8 +47,7 @@
 (if (!= MYSQLADMIN '())
     (begin
       (setq MYSQLLINE (first MYSQLADMIN))
-      (setq MYSQLADMIN (parse MYSQLLINE)))
-)
+      (setq MYSQLADMIN (parse MYSQLLINE))))
 
 (setq MYSQL_UPTIME (nth 1 MYSQLADMIN ))
 (setq MYSQL_THREADS (nth 3 MYSQLADMIN))
@@ -85,27 +80,17 @@
 #
 
 
-(!
- (format "echo \"%s\" > %s/%s.%s.mysqlslowq-trends.log"
+(! (format "echo \"%s\" > %s/%s.%s.mysqlslowq-trends.log"
 	 MYSQL_SLOWQ
 	 (env "BBTMP")
 	 (env "MACHINE")
-	 TEST) )
+	 TEST))
 
 
 
 #
 # COMPUTE DIFFERENCES
 #
-
-
-
-;(println (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:slow:GAUGE:600:0:U %d\""
-;	   (env "BB")
-;	   (env "BBDISP")
-;	   (env "MACHINE")
-;	   (int MYSQL_DSLOWQ)))
-
 
 (! (format "%s %s \"data %s.trends\n[mysqlslow.rrd]\nDS:mysqlslow:GAUGE:600:0:U %d\""
 	   (env "BB")
