@@ -8,20 +8,21 @@
 
 (if (= TESTNAME "weather")
     (begin
-      
+
         # The RRD dataset definitions
 
 	 (set 'buffer (read-file FNAME))
+
 	 (dolist (line-item (parse buffer "\n"))
-		 (cond 
-		  ((find "^Temperature:" line-item) 
+		 (cond
+		  ((find "^Temperature:" line-item)
 		   (setq TEMP (nth 1 (parse line-item))))
-		  ((find "^Wind:" line-item) 
+		  ((find "^Wind:" line-item)
 		   (setq WIND (nth 1 (parse line-item))))
-		  ((find "^Temperature:" line-item) 
+		  ((find "^Temperature:" line-item)
 		   (setq HMTY (nth 1 (parse line-item))))
-		  ((find "^Rainfall" line-item) 
-		   (setq RAIN (nth 1 (parse line-item))) )))
+		  ((find "^Rainfall" line-item)
+		   (setq RAIN (nth 1 (parse line-item))))))
 
         (println "DS:temperature:GAUGE:600:-30:50")
         (println "DS:wind:GAUGE:600:0:U")
@@ -36,8 +37,7 @@
 			   TEMP
 			   WND
 			   HMTY
-			   RAIN))
-	))
+			   RAIN))))
 
 (exit 0)
 
