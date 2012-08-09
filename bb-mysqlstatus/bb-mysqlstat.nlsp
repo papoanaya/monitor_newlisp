@@ -24,16 +24,12 @@
 #
 
 (if (= (env "BBHOME") "")
-    (println "BBHOME is not set... exiting")
-;    (exit 1)
-)
+    (println "BBHOME is not set... exiting"))
 
 
 
 (if (= (env "BBTMP") "")
-    (println "BBTMP is not set... exiting")
-;    (exit 1)
-)
+    (println "BBTMP is not set... exiting"))
 
 
 #
@@ -52,20 +48,12 @@
 (if (!= MYSQLADMIN '())
     (begin
       (setq MYSQLLINE (first MYSQLADMIN))
-      (setq MYSQLADMIN (parse MYSQLLINE)))
-)
-
-;(println MYSQLADMIN)
-;(println MYSQLLINE)
+      (setq MYSQLADMIN (parse MYSQLLINE))))
 
 (setq MYSQL_UPTIME (nth 1 MYSQLADMIN ))
 (setq MYSQL_THREADS (nth 3 MYSQLADMIN))
 (setq MYSQL_SLOWQ (nth 8 MYSQLADMIN))
 (setq MYSQL_QPSFRAC (nth 21 MYSQLADMIN))
-
-;(println MYSQL_SLOWQ)
-
-;MYSQL_QPS=${MYSQL_QPSFRAC%%.*}
 
 #
 # GET OLD VALUES
@@ -92,21 +80,18 @@
 # WRITE OUR OWN VALUES TO LOG
 #
 
-;(println MYSQL_UPTIME)
 
-(!
- (format "echo \"%s\" > %s/%s.%s.mysqluptime.log"
+(! (format "echo \"%s\" > %s/%s.%s.mysqluptime.log"
 	 MYSQL_UPTIME 
 	 (env "BBTMP")
 	 (env "MACHINE")
-	 TEST) )
+	 TEST))
 
-(!
- (format "echo \"%s\" > %s/%s.%s.mysqlslowq.log"
+(! (format "echo \"%s\" > %s/%s.%s.mysqlslowq.log"
 	 MYSQL_SLOWQ
 	 (env "BBTMP")
 	 (env "MACHINE")
-	 TEST) )
+	 TEST))
 
 
 
@@ -115,7 +100,6 @@
 #
 
 (setq MYSQL_DSLOWQ (-  (int MYSQL_SLOWQ) (int MYSQL_OLDSLOWQ)))
-
 
 (setq COLOR "green")
 (setq STATUS "Mysql OK")
@@ -132,10 +116,12 @@
   (begin
     (setq COLOR "yellow")
     (setq STATUS "Mysql Recently Restarted")))
+
   ((>= (int MYSQL_THREADS) 80)
    (begin
      (setq COLOR "yellow")
      (setq STATUS "Mysql high threads")))
+
   ((>= (int MYSQL_DSLOWQ)  10)
    (begin
      (setq COLOR "yellow")
@@ -151,11 +137,11 @@
    (begin
      (setq COLOR "red")
      (setq STATUS "Mysql very high threads")))
+
   ((>= (int MYSQL_DSLOWQ)  30)
    (begin
      (setq COLOR "red")
-     (setq STATUS "Mysql extreme number of slow queries")))
-)
+     (setq STATUS "Mysql extreme number of slow queries"))))
 
 (setq fp (open (format "%s/status.mysql" (env "BBLOGS")) write))
 (write-line fp MYSQLLINE)
