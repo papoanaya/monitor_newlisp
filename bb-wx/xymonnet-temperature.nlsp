@@ -1,48 +1,40 @@
 #!/opt/bin/env newlisp
 ;****h* monitor_newlisp/xymonnet-temperature
 ;
-; NAME 
+; NAME
 ;   xymonnet-temperature
-; 
-; SYNOPSIS 
+;
+; SYNOPSIS
 ;    Gets temperature information from the National Weather Service
-;    site and sends them into a RRD database in xymon. 
-;    
-; AUTHOR 
+;    site and sends them into a RRD database in xymon.
+;
+; AUTHOR
 ;    Luis R. Anaya
-; 
-; COPYRIGHT 
+;
+; COPYRIGHT
 ;    (c) 2012 by Luis R. Anaya
-; 
+;
 ;******
 
 
 (if (= (env "BBHOME") "")
     (begin
-      (println "BBHOME is not set")
-					;(exit 1)
-    )
-)
+      (println "BBHOME is not set")))
 
 (if (= (env "BBRDS") "")
     (begin
-      (println "BBRDS is not set")
-					;(exit 1)
-    )
-)
+      (println "BBRDS is not set")))
 
 (if (not (directory? (env "BBHOME")))
     (begin
       (println "BBHOME is invalid")
-      (exit 1)
-      )
-)
+      (exit 1)))
 
 ;****** xymonnet-temperature/machine-id
 ; NOTES
 ;   Being that this is a pull script, machine id may need
 ;   to be hard coded. Right now is getting the machine name
-;   from the xymon environment. 
+;   from the xymon environment.
 ;
 ; SOURCE
 
@@ -55,7 +47,7 @@
 
 ;****f* xymonnet-temperature/url-encode
 ;
-;  NAME 
+;  NAME
 ;    url-encode
 ;
 ;  DESCRIPTION
@@ -63,19 +55,19 @@
 ;
 ;  INPUTS
 ;     String to be encoded
-; 
+;
 ;  OUTPUT
 ;     Encoded string
-; 
+;
 ;******
 
 
-(define (url-encode str) 
+(define (url-encode str)
     (replace {([^a-zA-Z0-9])} str (format "%%%2X" (char $1)) 0))
-    
+
 ;****f* xymonnet-temperature/url-decode
 ;
-;  NAME 
+;  NAME
 ;    url-decode
 ;
 ;  DESCRIPTION
@@ -83,13 +75,13 @@
 ;
 ;  INPUTS
 ;     URL string to be decoded.
-; 
+;
 ;  OUTPUT
 ;     Decoded URL string.
-;   
+;
 ;******
 
-    
+
 (define (url-decode str)
   (replace "+" str " ") ; optional
   (replace "%([0-9A-F][0-9A-F])" str (format "%c" (int
@@ -97,26 +89,26 @@
 
 ;****f* xymonnet-temperature/getWxInformation
 ;
-;  NAME 
+;  NAME
 ;    getWxInformation
 ;
 ;  DESCRIPTION
 ;    Gets the weather information from that National Weather Service
 ;    (mobile.weather.gov). The mobile site was selected because
-;    it has less data to parse through and it would have less 
-;    impact on the network. 
-;   
+;    it has less data to parse through and it would have less
+;    impact on the network.
+;
 ;  INPUTS
 ;     zipcode - Zip Code
 ;
 ;  OUTPUT
 ;     Retrieves current weather information
-;   
+;
 ;******
 
 
 (define (getWxInformation zipcode)
-  (set 'request (list 
+  (set 'request (list
 		      (eval 'zipcode) ))
 
   (set 'urladdress "http://m.wund.com/cgi-bin/findweather/getForecast?")
@@ -124,26 +116,26 @@
   (set 'urldata (join (list "brand=" (url-encode "mobile")
 			    "&query=" (url-encode zipcode))))
 
-  (set 'result (post-url  urladdress urldata ) )
+  (set 'result (post-url  urladdress urldata))
 
 result)
 
 
 ;****f* xymonnet-temperature/getTemp
 ;
-;  NAME 
+;  NAME
 ;    getTemp
 ;
 ;  DESCRIPTION
-;    Gets the temperature information in Farenheith 
+;    Gets the temperature information in Farenheith
 ;    from the results from a getWxInformationCall
-;  
+;
 ;  INPUTS
 ;     Buffer from the getWxInformation Call
-; 
+;
 ;  OUTPUT
 ;     Temperature on the location in Farenheith
-; 
+;
 ;******
 
 
@@ -151,7 +143,7 @@ result)
   (let ((temperature 0)
         (get-next 0))
     (dolist (line-item (parse buffer "\n"))
-            (cond  
+            (cond
              ((find "<td>Temperature</td>" line-item)
               (setq get-next 2))
 
@@ -163,29 +155,27 @@ result)
                 (setq line-item (replace "&deg\;" line-item " "))
                 (setq line-item (replace "<b>" line-item "|"))
                 (setq line-item (replace "</b>" line-item "|"))
-                (setq temperature (nth 1 (parse line-item "|") ))
-                ))
-            ))
+                (setq temperature (nth 1 (parse line-item "|") ))))))
     temperature))
 
 ;****** xymonnet-temperature/main
 ;
 ;  DESCRIPTION
-;    The following operations are done 
+;    The following operations are done
 ;    to guide the collection and delivery
 ;    of data:
 ;    * Gets the statistics from NWS.
 ;    * Creates a list with the city and temperature
 ;    * Sends the data to Xymon for collection.
-;    
-;   
-;  NOTES 
+;
+;
+;  NOTES
 ;     City is hard coded, but I'll leave structure as it is
 ;     for future development.
-; 
+;
 ;******
-		
-	      
+
+
 (if (= TESTNAME "wx")
     (begin
 
@@ -193,15 +183,14 @@ result)
       (setq values (list (list "Piscataway" (getTemp buffer))))
 
   (dolist (value-item values)
-	  (! (format 
-	      (append "%s %s \"data %s.trends\n[wx.%s.rrd]\n" 
+	  (! (format
+	      (append "%s %s \"data %s.trends\n[wx.%s.rrd]\n"
 		      "DS:temperature:GAUGE:600:0:200 %d\"\n")
 	   (env "BB")
 	   (env "BBDISP")
 	   MACHINE
-	   (nth 0 value-item) 
-	   (int (nth 1 value-item)) ) )) 
-  ))
+	   (nth 0 value-item)
+	   (int (nth 1 value-item)))))))
 
 (exit 0)
 
@@ -214,7 +203,7 @@ result)
 ;     in $XYMONHOME/etc
 ;
 ;     graphs.cfg
-; 
+;
 ;     Add an entry with the following configuration
 ;     parameters for the graph.
 ;         [wx]
@@ -227,10 +216,10 @@ result)
 ;	     GPRINT:temperature@RRDIDX@:MAX: %6.1lf (max) \:
 ;	     GPRINT:temperature@RRDIDX@:MIN: %6.1lf (min) \:
 ;	     GPRINT:temperature@RRDIDX@:AVERAGE: %6.1lf (avg)\n
-;    
-;   
+;
+;
 ;   xymonserver.cfg
-;   
+;
 ;   At the end of the TEST2RRD and GRAPHS variables add
 ;   "wx". This will tell xymon to show the zebranet
 ;   graphs.
@@ -238,7 +227,7 @@ result)
 ;   Add this script under the $XYMONHOME/etc for the server and add an a
 ;   appropriate entry under $XYMONHOME/tasks.d/ to enable
 ;   automated execution of this script.
-;   
+;
 ;******
 
 
