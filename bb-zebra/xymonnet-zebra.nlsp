@@ -25,24 +25,16 @@
 
 (if (= (env "BBHOME") "")
     (begin
-      (println "BBHOME is not set")
-					;(exit 1)
-    )
-)
+      (println "BBHOME is not set")))
 
 (if (= (env "BBRDS") "")
     (begin
-      (println "BBRDS is not set")
-					;(exit 1)
-    )
-)
+      (println "BBRDS is not set")))
 
 (if (not (directory? (env "BBHOME")))
     (begin
       (println "BBHOME is invalid")
-      (exit 1)
-      )
-)
+      (exit 1)))
 
 
 
@@ -111,8 +103,7 @@
 
      (net-send socket "exit\r\n\r\n")
      (net-close socket)
-     outbuffer) )
-)
+     outbuffer)))
 
 
 
@@ -166,10 +157,8 @@
 		(set 'output-mbytes (/ (int bytes) 1000)) 
 		(setq result 
 		      (append result 
-			      (list (list interface-name input-mbytes output-mbytes))))))
-	     ))
-    result)
-)  
+			      (list (list interface-name input-mbytes output-mbytes))))))))
+    result))
 
 
 ;****** xymonnet-zebra/main
@@ -210,8 +199,7 @@
 	   MACHINE
 	   (nth 0 value-item) 
 	   (int (nth 1 value-item))
-	   (int (nth 2 value-item))) )) 
-  ))
+	   (int (nth 2 value-item)))))))
 
 (exit 0)
 
