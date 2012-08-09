@@ -22,9 +22,11 @@
   (set 'expr (regex "(\\?img=[a-zA-Z0-9]+)" result))
   (if (nil? expr)
       (write-line "Something went wrong")
-      (let ()
-	(set 'image (get-url (join (list
-				    "http://www.websequencediagrams.com/" (first expr)))))
+      (begin
+        (set 'image 
+             (get-url (join (list
+                             "http://www.websequencediagrams.com/" 
+                             (first expr)))))
 	(write-file outputfile image))))
 
 
@@ -41,7 +43,6 @@
 			    "&warnzone=" (url-encode warnzone))))
 
   (set 'result (post-url  urladdress urldata))
-
   (println result)
   (set 'expr (regex "(\\?img=[a-zA-Z0-9]+)" result)))
  
