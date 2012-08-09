@@ -1,48 +1,40 @@
 #!/opt/home/papo/bin/newlisp
 ;****h* monitor_newlisp/xymonnet-lighttpd
 ;
-; NAME 
+; NAME
 ;   xymonnet-lighttpd
-; 
-; SYNOPSIS 
+;
+; SYNOPSIS
 ;    Gets information from lighttpd servers by reading
 ;    data from /server-status
-;    
-; AUTHOR 
+;
+; AUTHOR
 ;    Luis R. Anaya
-; 
-; COPYRIGHT 
+;
+; COPYRIGHT
 ;    (c) 2012 by Luis R. Anaya
-; 
+;
 ;******
 
 
 (if (= (env "BBHOME") "")
     (begin
-      (println "BBHOME is not set")
-					;(exit 1)
-    )
-)
+      (println "BBHOME is not set")))
 
 (if (= (env "BBRDS") "")
     (begin
-      (println "BBRDS is not set")
-					;(exit 1)
-    )
-)
+      (println "BBRDS is not set")))
 
 (if (not (directory? (env "BBHOME")))
     (begin
       (println "BBHOME is invalid")
-      (exit 1)
-      )
-)
+      (exit 1)))
 
 ;****** xymonnet-lighttpd/machine-id
 ; NOTES
 ;   The following needs to be configured:
 ;   * URL - URL of the server running lighttpd
-;   
+;
 ;
 ; SOURCE
 
@@ -58,7 +50,7 @@
 
 ;****f* xymonnet-lighttpd/url-encode
 ;
-;  NAME 
+;  NAME
 ;    url-encode
 ;
 ;  DESCRIPTION
@@ -66,19 +58,19 @@
 ;
 ;  INPUTS
 ;     String to be encoded
-; 
+;
 ;  OUTPUT
 ;     Encoded string
-; 
+;
 ;******
 
 
-(define (url-encode str) 
+(define (url-encode str)
     (replace {([^a-zA-Z0-9])} str (format "%%%2X" (char $1)) 0))
-    
+
 ;****f* xymonnet-lighttpd/url-decode
 ;
-;  NAME 
+;  NAME
 ;    url-decode
 ;
 ;  DESCRIPTION
@@ -86,13 +78,13 @@
 ;
 ;  INPUTS
 ;     URL string to be decoded.
-; 
+;
 ;  OUTPUT
 ;     Decoded URL string.
-;   
+;
 ;******
 
-    
+
 (define (url-decode str)
   (replace "+" str " ") ; optional
   (replace "%([0-9A-F][0-9A-F])" str (format "%c" (int
@@ -100,150 +92,147 @@
 
 ;****f* xymonnet-lighttpd/get-lighttpd
 ;
-;  NAME 
+;  NAME
 ;    get-lighttpd
 ;
 ;  DESCRIPTION
 ;    Obtains status information from lighttpd.
-;   
+;
 ;  INPUTS
-;    Server URL, defined at start. 
-; 
+;    Server URL, defined at start.
+;
 ;  OUTPUT
 ;    Buffer with usage statistics.
-;   
-;  NOTES 
-; 
+;
+;  NOTES
+;
 ;******
 
 
 (define (get-lighttpd url )
-  (set 'urladdress  (list (eval 'url) ))
+  (set 'urladdress  (list (eval 'url)))
   (set 'urldata  "?auto" )
-  (set 'result (post-url url urldata ) )
+  (set 'result (post-url url urldata))
 
   result)
 
 
 ;****f* xymonnet-lighttpd/get-statistics-list
 ;
-;  NAME 
+;  NAME
 ;    get-statistics-list
 ;
 ;  DESCRIPTION
-;    Parses data from get-lighttpd and 
+;    Parses data from get-lighttpd and
 ;    creates a list with tag, values and
 ;    RRD graph creation information.
-;    
-;  
+;
+;
 ;  INPUTS
 ;     Buffer from get-lighttpd
-; 
+;
 ;  OUTPUT
 ;     List of data items with identification.
 ;     ( "ID" "Value" "RRD variable name" "RRD Variable Type")
-; 
+;
 ;******
 
 
 (define (get-statistic-list  buffer)
   (let ((v '() ) )
     (dolist (value-item (parse buffer "\n"))
-	    (cond 
-	     ((find "Total Accesses:" value-item) 
-	      (setq v 
-		    (append v 
-			    (list (list "TA" (nth 1 (parse value-item ":"))  
-					"access" "COUNTER" ) )) ))
-	     ((find "Total kBytes:" value-item) 
-	      (setq v 
-		    (append v 
-			    (list (list "TB" (nth 1 (parse value-item ":")) 
-					"kbytes" "COUNTER" ) )) ) )
-	     ((find "BusyServers:" value-item) 
-	      (setq v 
-		    (append v 
-			    (list (list "BS" (nth 1 (parse value-item ":")) 
-					"busy" "GAUGE" ) )) ))
-	     ((find "IdleServers:" value-item) 
-	      (setq v 
-		    (append v 
-			    (list (list "IS" (nth 1 (parse value-item ":")) 
-					"idle" "GAUGE" ) )) ))
-	     )
-	    )
-    v)
-)
+	    (cond
+	     ((find "Total Accesses:" value-item)
+	      (setq v
+		    (append v
+			    (list (list "TA" (nth 1 (parse value-item ":"))
+					"access" "COUNTER" )))))
+	     ((find "Total kBytes:" value-item)
+	      (setq v
+		    (append v
+			    (list (list "TB" (nth 1 (parse value-item ":"))
+					"kbytes" "COUNTER" )))))
+	     ((find "BusyServers:" value-item)
+	      (setq v
+		    (append v
+			    (list (list "BS" (nth 1 (parse value-item ":"))
+					"busy" "GAUGE" )))))
+	     ((find "IdleServers:" value-item)
+	      (setq v
+		    (append v
+			    (list (list "IS" (nth 1 (parse value-item ":"))
+					"idle" "GAUGE" )))))))
+    v))
 
 
 ;****f* xymonnet-lighttpd/anallyze-data
 ;
-;  NAME 
+;  NAME
 ;    analyze-data
 ;
 ;  DESCRIPTION
 ;    Gets the list of returned statistics
 ;    and determines if the server is running
-;    in GREEN, YELLOW or in RED by taking the 
+;    in GREEN, YELLOW or in RED by taking the
 ;    ratio of total servers vs.  the ones that
 ;    are busy.  Currently these are defined as:
-;    * Green: less than .75 
+;    * Green: less than .75
 ;    * Yellow: between .75 and .90
 ;    * Red: > .90
-;    
+;
 ;  INPUTS
 ;     List of data items as returned from get-statistics-list
-; 
+;
 ;  OUTPUT
 ;     List containing the server status.
 ;     ( "color" "status" "ratio")
-; 
+;
 ;******
 
 
 (define (analyze-data values)
   (dolist (value-items values)
 
-          (cond 
-           ( (=  (first value-items) "IS" ) 
-             (setq is_value (int (nth 1 value-items) ) ) )
-           ( (=  (first value-items) "BS" ) 
-             (setq bs_value (int (nth 1 value-items) ) ) ) )
-          )
+          (cond
+           ((=  (first value-items) "IS")
+             (setq is_value (int (nth 1 value-items))))
+           ((=  (first value-items) "BS" )
+             (setq bs_value (int (nth 1 value-items))))))
 
   (setq ts_value (+ is_value bs_value))
 
   (setq ratio (div bs_value ts_value))
-  (cond ( (>   ratio .90)
-          (setq color RED) 
-          (setq value "CRITICAL"))
-        ( (and (> ratio .75 ) (< ratio .90))
-          (setq color YELLOW) 
-          (setq value "BUSY"))
-        (true (setq color GREEN)
-              (setq value "OK"))
+  (cond ((> ratio .90)
+         (setq color RED)
+         (setq value "CRITICAL"))
 
-        )
-  (list color value ratio ))
+        ((and (> ratio .75 ) (< ratio .90))
+         (setq color YELLOW)
+         (setq value "BUSY"))
+
+        (true (setq color GREEN)
+              (setq value "OK")))
+
+  (list color value ratio))
 
 ;****** xymonnet-lighttpd/main
 ;
 ;  DESCRIPTION
-;    The following operations are done 
+;    The following operations are done
 ;    to guide the collection and delivery
 ;    of data:
 ;    * Gets the statistics from lighttpd server
 ;    * Creates a list with statistics.
 ;    * Creates a list with status information.
 ;    * Sends the data to Xymon for RRD collection.
-;    * Sends the data to Xymon to display system 
-;      status. 
-;   
-;  NOTES 
-; 
+;    * Sends the data to Xymon to display system
+;      status.
+;
+;  NOTES
+;
 ;******
-		
-	      
+
+
 (if (= TESTNAME "lighttpd")
     (begin
 
@@ -252,28 +241,27 @@
       (setq results (analyze-data values))
       (dolist (value-item values)
               (if (= "GAUGE" (nth 3 value-item))
-                  (! (format 
-                      (append "%s %s \"data %s.trends\n[lighttpd.%s.rrd]\n" 
+                  (! (format
+                      (append "%s %s \"data %s.trends\n[lighttpd.%s.rrd]\n"
                               "DS:%s:%s:600:0:10000 %d\"\n")
                       (env "BB")
                       (env "BBDISP")
                       MACHINE
-                      (nth 0 value-item) 
+                      (nth 0 value-item)
                       (nth 2 value-item)
-                      (nth 3 value-item) 
-                      (int (nth 1 value-item))) )
+                      (nth 3 value-item)
+                      (int (nth 1 value-item))))
 
-                  (! (format 
-                      (append "%s %s \"data %s.trends\n[%s.lighttpd.rrd]\n" 
+                  (! (format
+                      (append "%s %s \"data %s.trends\n[%s.lighttpd.rrd]\n"
                               "DS:%s:%s:600:0:10000 %d\"\n")
                       (env "BB")
                       (env "BBDISP")
                       MACHINE
-                      (nth 2 value-item) 
                       (nth 2 value-item)
-                      (nth 3 value-item) 
-                      (int (nth 1 value-item))) ) 
-                  )) 
+                      (nth 2 value-item)
+                      (nth 3 value-item)
+                      (int (nth 1 value-item))))))
 
 
       (! (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
@@ -284,11 +272,7 @@
                        (nth 0 results)
                        (date)
                        (nth 1 results)
-                       (append "Ratio: " (string (nth 2 results)))))
-
-      )
-
-    )
+                       (append "Ratio: " (string (nth 2 results)))))))
 
 (exit 0)
 
@@ -297,22 +281,22 @@
 ;
 ;  DESCRIPTION
 ;    This script can run on the server or
-;    client being that it pulls data from 
+;    client being that it pulls data from
 ;    the http server. Currently coded as a
 ;    client, but converting it to be a server
-;    script should not be hard. 
-;    
+;    script should not be hard.
+;
 ;    Server:
-;    
+;
 ;    To configure xymon to show these under
 ;    trends, the following needs to be configured
 ;    in $XYMONHOME/etc
 ;
 ;    graphs.cfg
-; 
+;
 ;    Add an entry with the following configuration
 ;    parameters for the graph.
-;    
+;
 ;        [lighttpd]
 ; 	         TITLE Workers Statistics
 ; 	         YAXIS Count
@@ -346,18 +330,18 @@
 ; 	         GPRINT:access:LAST: %6.1lf (cur) \:
 ; 	         GPRINT:access:MAX: %6.1lf (max) \:
 ; 	         GPRINT:access:MIN: %6.1lf (min) \:
-; 	         GPRINT:access:AVERAGE: %6.1lf (avg)\n 
-;    
-;    hosts.cfg 
-;     
+; 	         GPRINT:access:AVERAGE: %6.1lf (avg)\n
+;
+;    hosts.cfg
+;
 ;    Add "lighttpd" to the server to be monitored
-;    
+;
 ;    Client:
-;    
+;
 ;    clientlaunch.cfg
-;   
+;
 ;    Add this script under the $XYMONCLIENTHOME/ext for the server and add an a
 ;    appropriate entry under $XYMONCLIENTHOME/clientlaunch to enable
 ;    automated execution of this script.
-;   
+;
 ;******
