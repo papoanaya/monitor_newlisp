@@ -2,28 +2,28 @@
 
 ;****h* dzen_newlisp/fullmon.nlsp
 ;
-; NAME 
+; NAME
 ;   fullmon.nlsp
-; 
-; SYNOPSIS 
+;
+; SYNOPSIS
 ;    A monitoring script for dzen2.
 ;    Self contained script that performs some light monitoring
 ;    functions in a Linux System and sends those monitoring
 ;    statistics to a dzen2 process.
 ;
-; AUTHOR 
+; AUTHOR
 ;    Luis R. Anaya
-; 
-; COPYRIGHT 
+;
+; COPYRIGHT
 ;    (c) 2012 by Luis R. Anaya
-; 
+;
 ;******
 
 ;****v* dzen_newlisp/configuration
-; 
+;
 ; DESCRIPTION
 ;    User configurable parameters
-; 
+;
 ; SOURCE
 ;; = Config =
 
@@ -55,10 +55,10 @@
 
 ;******
 ;****c* dzen_newlisp/signal
-; 
+;
 ; DESCRIPTION
 ;    Signal handling constants
-; 
+;
 ; SOURCE
 ;
 
@@ -74,19 +74,18 @@
 
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    ctrlC-handler
 ;
 ; DESCRIPTION
 ;    Signal handler routine for al signals
-;    It just terminates execution and closes the program. 
-;   
+;    It just terminates execution and closes the program.
+;
 ;******
 
 (define (ctrlC-handler)
-  (exit)
-)
+  (exit))
 
 
 
@@ -109,216 +108,205 @@
 (if (= dzen-location '())
     (setq dzen-location "dzen2")
     (begin
-      (setq dzen-location (first dzen-location))
-      )
-)
+      (setq dzen-location (first dzen-location))))
 
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    get-disk
 ;
 ; DESCRIPTION
 ;    Executes df and gets a list of disk mount
 ;    points and available space.
-; 
-; INPUTS 
+;
+; INPUTS
 ;    None
 ;
 ; OUTPUT
 ;   List with df results
-;   
-;   
+;
+;
 ;******
 
-(define (get-disk) 
+(define (get-disk)
   ;*****
   ; NOTES
   ;   Remove -P if df does not support it.
   ;
-  ; SOURCE 
+  ; SOURCE
   (setq df-results (exec "df -P "))
   ;******
 
   (map (fn (x)
 	 (let ((y (parse x)))
-	   (list (nth 0 y) (nth 4 y))
-	 ))
-	 (rest df-results))
-)
+	   (list (nth 0 y) (nth 4 y))))
+	 (rest df-results)))
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    get-dbar
 ;
 ; DESCRIPTION
 ;    Runs gdbar to get a graphical representation
 ;    of a number.
-;    
-; 
-; INPUTS 
+;
+;
+; INPUTS
 ;    None
 ;
 ; OUTPUT
-;   Graphical representation of a number. 
-;   
-;   
+;   Graphical representation of a number.
+;
+;
 ;******
 
 (define (get-dbar fs per)
-   (first (exec  (append "echo " per "| gdbar -l " fs) ))
-)
+   (first (exec  (append "echo " per "| gdbar -l " fs))))
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    get-dbar-result
 ;
 ; DESCRIPTION
 ;    Executes get-dbar for all the mountpoints
 ;    being monitored.
-; 
-; INPUTS 
+;
+; INPUTS
 ;    mountpoint to be monitored
 ;
 ; OUTPUT
 ;   Graphical representation of mountpoint
-;   
-;   
+;
+;
 ;******
 
 
 (define (get-dbar-results mountpoint)
   (let ((df-result (get-disk)) )
     (map (fn (x)
-	   (if (not (nil? (find mountpoint  (first x)) ))
-	       (get-dbar (last (parse (first x) "/"))  (nth 1 x)) ))
-	 df-result))
-)
+	   (if (not (nil? (find mountpoint  (first x))))
+	       (get-dbar (last (parse (first x) "/"))  (nth 1 x))))
+	 df-result)))
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    get-free
 ;
 ; DESCRIPTION
 ;   Executes free -t and gets the total.
-; 
-; INPUTS 
+;
+; INPUTS
 ;   Nothing
 ;
 ; OUTPUT
-;   Gets the last line containing the 
+;   Gets the last line containing the
 ;   available memory totals
-;   
-;   
+;
+;
 ;******
 
 
-(define (get-free) 
+(define (get-free)
   ;******
-  ; NOTES 
-  ;   free must have -t available. 
-  ; 
+  ; NOTES
+  ;   free must have -t available.
+  ;
   ; SOURCE
-  ; 
+  ;
   (setq free-results (exec "free -t"))
   ;
   ;******
-  (parse (last free-results))
- )
+  (parse (last free-results)))
 
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    get-mem-dbar-result
 ;
 ; DESCRIPTION
 ;    Executes get-dbar for the available memory
-; 
-; INPUTS 
+;
+; INPUTS
 ;    Nothing
 ;
 ; OUTPUT
 ;   Graphical representation of the available
 ;   memory.
-;   
-;   
+;
+;
 ;******
 
 
 (define (get-mem-dbar-results)
   (setq free-result (get-free))
-  (get-dbar "MEM:" 
-  (string (round (mul 
-		 (div 
-		  (float (nth 2 free-result)) 
-		  (float (nth 1 free-result))) 100 ) 0) ) )
-)
+  (get-dbar "MEM:"
+  (string (round (mul
+		 (div
+		  (float (nth 2 free-result))
+		  (float (nth 1 free-result))) 100) 0))))
 
-  
+
 
 
 (setq *DATE&TIME* "")
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    update-date&time
 ;
 ; DESCRIPTION
 ;    Updates date and time - not in use
-; 
-; INPUTS 
+;
+; INPUTS
 ;    Nothing
 ;
 ; OUTPUT
 ;   Updated date and time.
-;  
+;
 ; NOTES
 ;   Probably best by using (date)
-;   
+;
 ;******
 
 
 (define (update-date&time)
-  (let ()
-    (setq *DATE&TIME* (first (exec  (append "date +" DATE-FORMAT ))))
-   )
-)
-  
+  (begin
+    (setq *DATE&TIME* (first (exec  (append "date +" DATE-FORMAT ))))))
+
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    process_exists
 ;
 ; DESCRIPTION
 ;    Checks if a process exists and returns its result
-; 
-; INPUTS 
+;
+; INPUTS
 ;    Process id (numeric)
 ;
 ; OUTPUT
 ;   True if process is running, false otherwise.
-;  
-;   
+;
+;
 ;******
 
 (define (process_exists the_pid)
   (setq get_process (exec "ps"))
-  (not (for-all 
-   (fn (x) 
+  (not (for-all
+   (fn (x)
      (not (= the_pid (first (parse x))) ))
-   get_process) ) 
-)
+   get_process)))
 
 ;****f*
-; 
-; NAME 
+;
+; NAME
 ;    main
 ;
 ; DESCRIPTION
@@ -330,14 +318,14 @@
 ;    *   Checks CPU
 ;    *   Terminates if dzen2 is not running, otherwise
 ;    *   Sends data to be presented
-; 
-; INPUTS 
+;
+; INPUTS
 ;    None
 ;
 ; OUTPUT
 ;   Dzen2 execution with output.
-;  
-;   
+;
+;
 ;******
 
 
@@ -360,7 +348,7 @@
 				(if (not (nil? (find suffix x)))
 				    (write myout (format "%s " x))) ))
 			(get-dbar-results mountpoint)) )
-	 
+
 	 (write myout SEPARATOR)
 	 (write myout " ")
 	 (write myout (get-mem-dbar-results))
@@ -368,9 +356,8 @@
 	 (write myout (last  (exec "gcpubar -i 1 -c 5  ")))
 	 (write-line myout)
 	 (sleep 10000)
-	 (if (not (process_exists (string pid)) )
+	 (if (not (process_exists (string pid)))
 	     (throw 0)))
-  (destroy pid)
-)
+  (destroy pid))
 
 (main)
