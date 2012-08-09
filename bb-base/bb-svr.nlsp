@@ -29,16 +29,12 @@
 #
 
 (if (= (env "BBHOME") "")
-    (println "BBHOME is not set... exiting")
-;    (exit 1)
-)
+    (println "BBHOME is not set... exiting"))
 
 
 
 (if (= (env "BBTMP") "")
-    (println "BBTMP is not set... exiting")
-;    (exit 1)
-)
+    (println "BBTMP is not set... exiting"))
 
 
 #
@@ -57,7 +53,7 @@
 # GET CURRENT VALUES
 #
 
-  (setq DATA-LINE (define (gather-data server-item)) 0 )
+  (setq DATA-LINE (define (gather-data server-item)) 0)
   (setq VALUE (let () DATA-LINE))
 
 #
@@ -65,12 +61,11 @@
 #
 
 
-  (!
-   (format "echo \"%s\" > %s/%s.%s.test.log"
+  (! (format "echo \"%s\" > %s/%s.%s.test.log"
 	   VALUE
 	   (env "BBTMP")
 	   server-item
-	   TEST) )
+	   TEST))
 
 
 
@@ -97,24 +92,11 @@
   ((red? server-item)
    (begin
      (setq COLOR RED)
-     (setq STATUS "Red Status")))
-
-  )
+     (setq STATUS "Red Status"))))
 
   (setq fp (open (format "%s/status.%s" (env "BBLOGS") TEST) write))
   (write-line fp DATA-LINE)
   (close fp)
-
-;(println (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
-;	   (env "BB")
-;	   (env "BBDISP")
-;	   server-item
-;	   TEST   
-;	   COLOR
-;	   (date)
-;	   STATUS
-;	   DATA-LINE))
-
 
   (! (format "%s %s \"status %s.%s %s %s - %s \n\n%s\"\n"
 	     (env "BB")
@@ -124,8 +106,6 @@
 	     COLOR
 	     (date)
 	     STATUS
-	     DATA-LINE ))
-
-  )
+	     DATA-LINE)))
 
 (exit 0)
