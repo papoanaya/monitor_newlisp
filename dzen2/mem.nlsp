@@ -40,9 +40,7 @@
 (if (= dzen-location '())
     (setq dzen-location "dzen2")
     (begin
-      (setq dzen-location (first dzen-location))
-      )
-)
+      (setq dzen-location (first dzen-location))))
 
 
 
@@ -66,8 +64,7 @@
 
 (define (get-free) 
   (setq free-results (exec "free -t "))
-  (parse (last free-results))
- )
+  (parse (last free-results)))
 
 
 ;****f*
@@ -91,8 +88,7 @@
 
 
 (define (get-dbar label per)
-   (first (exec  (append "echo " per "| gdbar -l " label) ))
-)
+   (first (exec  (append "echo " per "| gdbar -l " label))))
 
 
 ;****f*
@@ -119,8 +115,7 @@
   (string (round (mul 
 		 (div 
 		  (float (nth 3 free-result)) 
-		  (float (nth 2 free-result))) 100 ) 0) ) )
-)
+		  (float (nth 2 free-result))) 100) 0))))
 
 
 
@@ -145,9 +140,8 @@
   (setq get_process (exec "ps"))
   (not (for-all 
    (fn (x) 
-     (not (= the_pid (first (parse x))) ))
-   get_process) ) 
-)
+     (not (= the_pid (first (parse x)))))
+   get_process)))
 
 ;****f*
 ; 
@@ -189,11 +183,8 @@
 	 (write myout (last  (exec "gcpubar -i 1 -c 5  ")))
 	 (write-line myout)
 	 (sleep 10000)
-	 (if (not (process_exists (string pid)) )
+	 (if (not (process_exists (string pid)))
 	     (throw 0)))
-  (destroy pid)
-
-)
-
+  (destroy pid))
 
 (main)
