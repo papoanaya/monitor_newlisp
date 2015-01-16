@@ -1,4 +1,4 @@
-Big Brother/Xymon Weather Scripts
+Big Brother/Xymon Lighttpd Monitor
 ========================================================
 
 Motivation
