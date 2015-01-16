@@ -3,10 +3,11 @@ Big Brother/Xymon Weather Scripts
 
 Motivation
 ----------
-Collects data from the national weather service (weather.gov) 
+Collects data from the weather underground (wund.com)
 
 Scripts
 -------
+
 * xymonnet-temperature.nlsp - Temperature for a given territory
 
 Installation
@@ -19,14 +20,12 @@ Installation
     * xymonserver.cfg
  
 2.  The following needs to be configured in the script to 
-    get the right weather data. For get the valid
-	values, go to mobile.weather.gov and do a search by
-	zip code.  On the top of the browser, the returned URL will show the
-	following values:
+    get the right weather data with the zip code. 
     * zipcode - Zip Code
 	
     Make a note on those being that they need to be entered in the
 	script in the following lines:
+    
     ``` lisp
         (setq buffer (getWxInformation "08854"))
         (setq values (list (list "Piscataway" (getTemp buffer))))
