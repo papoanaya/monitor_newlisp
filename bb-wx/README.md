@@ -23,15 +23,12 @@ Installation
 	values, go to mobile.weather.gov and do a search by
 	zip code.  On the top of the browser, the returned URL will show the
 	following values:
-    * cityname - City Name
-    * site - NWS Site
-    * state - State or territory
-    * warnzone - Warn advisory zone
+    * zipcode - Zip Code
 	
     Make a note on those being that they need to be entered in the
 	script in the following lines:
     ``` lisp
-        (setq buffer (getWxInformation "Piscataway" "PHI" "NJ" "NJZ012"))
+        (setq buffer (getWxInformation "08854"))
         (setq values (list (list "Piscataway" (getTemp buffer))))
     ```
  
